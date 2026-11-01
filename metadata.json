@@ -1,0 +1,8 @@
+{
+  "name": "MealMate - Campus Meal Pre-Ordering",
+  "description": "Campus meal pre-ordering and vendor demand coordination platform for DBS Global University (DGU). Skip the queue, reserve meals with confirmed pickup slots.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

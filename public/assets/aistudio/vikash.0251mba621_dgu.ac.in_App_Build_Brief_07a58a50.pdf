@@ -1,0 +1,729 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 9937
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 790.8663779527558972 Td
+(DGU VENTURE QUEST) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.478 0.247 0.627 rg
+204.0944881889764133 790.8663779527558972 Td
+(Entrepreneurship & Innovation — DBS Global University) Tj
+ET
+0.36 0.17 0.51 RG
+1.7007874015748032 w
+51.0236220472441033 778.1104724409448181 m
+544.2563779527558836 778.1104724409448181 l
+S
+BT
+/F2 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 761.1025984251967884 Td
+(Student:) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+102.0472440944882067 761.1025984251967884 Td
+(Vikash Kumar Gupta 0251MBA621) Tj
+ET
+BT
+/F2 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+300.472440944881896 761.1025984251967884 Td
+(DGU Email:) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+354.3307086614173613 761.1025984251967884 Td
+(vikash.0251mba621@dgu.ac.in) Tj
+ET
+BT
+/F2 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 748.346692913385823 Td
+(Venture:) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+102.0472440944882067 748.346692913385823 Td
+(MealMate) Tj
+ET
+BT
+/F2 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+300.472440944881896 748.346692913385823 Td
+(Generated:) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+354.3307086614173613 748.346692913385823 Td
+(30 Sept 2026) Tj
+ET
+0.89 0.91 0.94 RG
+0.8503937007874016 w
+51.0236220472441033 734.1734645669290558 m
+544.2563779527558836 734.1734645669290558 l
+S
+BT
+/F2 15 Tf
+17.25 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 717.1655905511811397 Td
+(ASSIGNMENT 2 — VENTURE APP BUILD BRIEF) Tj
+ET
+0.36 0.17 0.51 RG
+0.97 0.96 0.98 rg
+1.1338582677165356 w
+56.6929133858267775 697.3230708661417339 m
+538.5870866141731312 697.3230708661417339 l
+541.7181497628201896 697.3230708661417339 544.2563779527558836 694.7848426762060399 544.2563779527558836 691.6537795275589815 c
+544.2563779527558836 646.2994488188976447 l
+544.2563779527558836 643.1683856702505864 541.1253148041088252 640.6301574803148924 538.5870866141731312 640.6301574803148924 c
+56.6929133858267775 640.6301574803148924 l
+53.5618502371797618 640.6301574803148924 51.0236220472441033 643.7612206289619508 51.0236220472441033 646.2994488188976447 c
+51.0236220472441033 691.6537795275589815 l
+51.0236220472441033 694.7848426762060399 54.1546851958911191 697.3230708661417339 56.6929133858267775 697.3230708661417339 c
+h
+B
+BT
+/F2 8.5 Tf
+9.7749999999999986 TL
+0.357 0.173 0.514 rg
+62.3622047244094517 683.1498425196850803 Td
+(VENTURE APPLICATION OBJECTIVE) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.09 g
+62.3622047244094517 670.3939370078740012 Td
+(Build an individual working application prototype based on your) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.09 g
+62.3622047244094517 659.0553543307086102 Td
+(validated venture logic. This document defines the exact software) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.09 g
+62.3622047244094517 647.7167716535432191 Td
+(specifications derived from your Venture Quest journey.) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 630.7088976377951894 Td
+(Venture Name) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 619.3703149606299121 Td
+(MealMate) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 602.3624409448818824 Td
+(Target User) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 591.0238582677164914 Td
+(DGU students aged 20–27 who purchase at least four prepared meals per week and have meal breaks shorter than 45 minutes,) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 579.6852755905511003 Td
+(beginning with hostel residents and first-year MBA cohorts) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 562.6774015748030706 Td
+(Core Problem) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 551.3388188976377933 Td
+(Students face long queues, uncertain menu availability, inconsistent pricing and last-minute meal decisions. Canteens and nearby) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 540.0002362204724022 Td
+(food vendors lack reliable demand visibility, causing stock-outs, overproduction, slow service and avoidable food waste. General) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 528.6616535433070112 Td
+(food-delivery platforms add delivery charges and commissions without solving the daily campus-meal problem.) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 511.6537795275589815 Td
+(Jobs to Be Done \(JTBD\)) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 500.3151968503936473 Td
+(my classes or academic commitments leave only a short meal break and campus outlets are likely to be crowded -> pre-order a) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 488.9766141732283131 Td
+(suitable, affordable meal for a confirmed pickup time -> I can eat on time, stay within budget and return to class without uncertainty) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 477.6380314960629221 Td
+(or avoidable waiting) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 460.6301574803148924 Td
+(Value Proposition) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 449.2915748031495582 Td
+(For time-constrained DGU students who struggle with queues and uncertain meal availability, MessMate provides campus-priced) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 437.952992125984224 Td
+(meal pre-ordering with confirmed pickup slots, so they can eat on time, control spending and return to class without avoidable) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 426.614409448818833 Td
+(waiting.) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 409.6065354330708033 Td
+(Core MVP Features \(Must Have\)) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 398.2679527559054691 Td
+(1. Live menu and confirmed item availability: Removes the uncertainty and stock-out friction identified in Mission 1 \(Solves: Know) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 386.929370078740078 Td
+(what affordable food is actually available before walking to the outlet\)) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 375.5907874015747439 Td
+(2. Pre-order with capped pickup slots: Tests the core promise of reducing queues without overwhelming the vendor \(Solves:) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 364.2522047244094097 Td
+(Reserve a meal for a predictable collection time during a short break\)) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 352.9136220472440186 Td
+(3. Vendor order dashboard and status confirmation: Customer reliability depends on a simple outlet workflow and confirmed) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 341.5750393700786844 Td
+(inventory \(Solves: Receive reliable acceptance, preparation and ready-for-pickup status\)) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 324.5671653543306547 Td
+(What Will NOT Be Included in Version 1) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 313.2285826771652637 Td
+(Native Android or iOS apps, delivery fleet, AI recommendations, loyalty wallet, dynamic pricing, automated refunds, multi-campus) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 301.8899999999999864 Td
+(administration, advanced subscriptions and advertising marketplace.) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 284.882125984251843 Td
+(Required Inputs from User) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 273.5435433070865656 Td
+(User credentials, business input variables, customer preferences, activity logs) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 256.5356692913385359 Td
+(Required Outputs / Display) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 245.1970866141731449 Td
+(Decision recommendations, calculated metrics, visual feedback, downloadable deliverables) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 228.1892125984251152 Td
+(Data That Must Be Stored) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 216.8506299212597241 Td
+(User profile, venture entities, session inputs, timestamps, status flags) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 199.8427559055116944 Td
+(Suggested User Flow) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 188.5041732283464171 Td
+(1. Onboarding & problem framing) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 177.1655905511810261 Td
+(2. User decision / calculation input) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 165.827007874015635 Td
+(3. Value generation / result display) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 154.4884251968503577 Td
+(4. Save, export, or action completion) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 137.480551181102328 Td
+(Validation Objective) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 126.1419685039369369 Td
+(At least 50 DGU students will place a campus-priced pre-order, and at least 30% will order again within seven days when fulfilment) Tj
+ET
+BT
+/F1 8.5 Tf
+9.7749999999999986 TL
+0.09 g
+51.0236220472441033 114.8033858267715459 Td
+(exceeds 90% and median pickup waiting time remains below seven minutes.) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.392 0.455 0.545 rg
+213.1999999999999318 25.5118110236220446 Td
+(DGU Venture Quest  |  MealMate  |  Page 1 of 2) Tj
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 6 0 R
+>>
+endobj
+6 0 obj
+<<
+/Length 1656
+>>
+stream
+1.1338582677165356 w
+0.36 0.17 0.51 RG
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.357 0.173 0.514 rg
+51.0236220472441033 768.1892125984252289 Td
+(DGU VENTURE QUEST) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.478 0.247 0.627 rg
+204.0944881889764133 768.1892125984252289 Td
+(Entrepreneurship & Innovation — DBS Global University) Tj
+ET
+0.36 0.17 0.51 RG
+1.7007874015748032 w
+51.0236220472441033 755.4333070866141497 m
+544.2563779527558836 755.4333070866141497 l
+S
+0.06 0.73 0.51 RG
+0.93 0.99 0.96 rg
+1.1338582677165356 w
+56.6929133858267775 738.42543307086612 m
+538.5870866141731312 738.42543307086612 l
+541.7181497628201896 738.42543307086612 544.2563779527558836 735.887204880930426 544.2563779527558836 732.7561417322834814 c
+544.2563779527558836 710.0789763779526993 l
+544.2563779527558836 706.9479132293057546 541.1253148041088252 704.4096850393700606 538.5870866141731312 704.4096850393700606 c
+56.6929133858267775 704.4096850393700606 l
+53.5618502371797618 704.4096850393700606 51.0236220472441033 707.5407481880170053 51.0236220472441033 710.0789763779526993 c
+51.0236220472441033 732.7561417322834814 l
+51.0236220472441033 735.887204880930426 54.1546851958911191 738.42543307086612 56.6929133858267775 738.42543307086612 c
+h
+B
+BT
+/F2 8.5 Tf
+9.7749999999999986 TL
+0.357 0.173 0.514 rg
+62.3622047244094517 724.2522047244094665 Td
+(SUBMITTED WORKING APP URL) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.09 g
+62.3622047244094517 711.4962992125983874 Td
+(https://elaborate-begonia-f76d14.netlify.app/) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.392 0.455 0.545 rg
+213.1999999999999318 25.5118110236220446 Td
+(DGU Venture Quest  |  MealMate  |  Page 2 of 2) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R ]
+/Count 2
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+9 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+10 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+11 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+12 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+13 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+14 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+15 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+16 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+17 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+18 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+19 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+20 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+/F5 11 0 R
+/F6 12 0 R
+/F7 13 0 R
+/F8 14 0 R
+/F9 15 0 R
+/F10 16 0 R
+/F11 17 0 R
+/F12 18 0 R
+/F13 19 0 R
+/F14 20 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+21 0 obj
+<<
+/Producer (jsPDF 4.2.1)
+/CreationDate (D:20260930163358+05'30')
+>>
+endobj
+22 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 23
+0000000000 65535 f 
+0000011986 00000 n 
+0000013811 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000010141 00000 n 
+0000010278 00000 n 
+0000012049 00000 n 
+0000012174 00000 n 
+0000012304 00000 n 
+0000012437 00000 n 
+0000012575 00000 n 
+0000012699 00000 n 
+0000012828 00000 n 
+0000012960 00000 n 
+0000013096 00000 n 
+0000013224 00000 n 
+0000013351 00000 n 
+0000013480 00000 n 
+0000013613 00000 n 
+0000013715 00000 n 
+0000014061 00000 n 
+0000014147 00000 n 
+trailer
+<<
+/Size 23
+/Root 22 0 R
+/Info 21 0 R
+/ID [ <361C23E8801E084589900A83A35702F4> <361C23E8801E084589900A83A35702F4> ]
+>>
+startxref
+14251
+%%EOF

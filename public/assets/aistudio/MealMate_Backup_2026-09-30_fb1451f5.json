@@ -1,0 +1,358 @@
+{
+  "app": "DGU Venture Quest",
+  "exportVersion": "1.0",
+  "exportedAt": "2026-09-30T10:31:10.054Z",
+  "venture": {
+    "ventureName": "MealMate",
+    "ventureIdea": "MealMate is a campus-focused meal pre-ordering and subscription platform that connects students with university canteens and nearby food partners. Students can view menus, compare prices, pre-order meals, choose pickup slots, subscribe to affordable meal plans and rate food quality. Vendors receive consolidated demand forecasts, digital orders and basic inventory insights. Unlike a generic food-delivery app, MealMate is designed for high-frequency campus meals, faster pickup, student budgets and reduced food waste.",
+    "currentMission": 12,
+    "unlockedMission": 12,
+    "completedMissions": [],
+    "completionPercentage": 0,
+    "assignment1Ready": false,
+    "assignment2Ready": true,
+    "createdAt": "2026-09-28T11:01:51.969Z",
+    "updatedAt": "2026-09-28T11:01:51.969Z",
+    "mission0": {
+      "ventureName": "MealMate",
+      "ventureIdea": "MealMate is a campus-focused meal pre-ordering and subscription platform that connects students with university canteens and nearby food partners. Students can view menus, compare prices, pre-order meals, choose pickup slots, subscribe to affordable meal plans and rate food quality. Vendors receive consolidated demand forecasts, digital orders and basic inventory insights. Unlike a generic food-delivery app, MealMate is designed for high-frequency campus meals, faster pickup, student budgets and reduced food waste.",
+      "problemSolved": "Students face long queues, uncertain menu availability, inconsistent pricing and last-minute meal decisions. Canteens and nearby food vendors lack reliable demand visibility, causing stock-outs, overproduction, slow service and avoidable food waste. General food-delivery platforms add delivery charges and commissions without solving the daily campus-meal problem.",
+      "initialCustomer": "The initial users are DBS Global University students, especially hostel residents, day scholars and students with tightly scheduled classes. The initial paying business customers are campus canteens and nearby affordable food vendors seeking predictable demand, faster order handling and repeat purchases.",
+      "geography": "DBS Global University campus and nearby Dehradun student and hostel clusters",
+      "whyChosen": "Campus meals are a frequent and observable student problem. Queue time, uncertain availability, limited budgets and food waste can be measured directly through interviews and pilot transactions. The idea also supports a focused digital MVP that can be tested within one campus before expanding to other colleges."
+    },
+    "mission1": {
+      "frictions": [
+        {
+          "whyWorkaroundUnsatisfactory": "The workaround wastes time, provides no inventory certainty, adds delivery fees and may cause students to miss classes or settle for unsuitable meals.",
+          "evidenceSource": "Working hypothesis based on commonly observable campus dining patterns; direct validation is pending.",
+          "whoExperiences": "DBS Global University students, especially hostel residents and students with back-to-back classes.",
+          "whenOccurs": "Lunch and dinner peaks, particularly between consecutive classes, examinations and event days.",
+          "currentWorkaround": "Students visit the canteen physically, ask friends about availability, skip meals or order through general delivery apps.",
+          "friction": "Students lose time in queues and still face uncertainty about whether preferred, affordable meals will be available when their classes end.",
+          "id": "f-1",
+          "evidenceStrength": "Strong"
+        },
+        {
+          "id": "f-1790604167373",
+          "friction": "Students lack a convenient way to plan predictable, budget-controlled daily meals without repeatedly deciding and paying for each order.",
+          "whoExperiences": "Hostel residents and price-sensitive students who purchase prepared meals several times per week.",
+          "whenOccurs": "At the beginning of a week or month and during periods of heavy academic workload.",
+          "currentWorkaround": "Students keep informal monthly arrangements with vendors, pay per meal or switch between canteens and delivery apps.",
+          "whyWorkaroundUnsatisfactory": "Informal plans offer limited choice, weak service accountability, unclear savings and no simple pause, change or feedback mechanism.",
+          "evidenceSource": "Founder assumption requiring interviews and willingness-to-pay testing with students.",
+          "evidenceStrength": "Strong"
+        },
+        {
+          "id": "f-1790604169410",
+          "friction": "Campus food vendors cannot accurately forecast demand, resulting in stock-outs of popular dishes, surplus food, slow order handling and lost sales.",
+          "whoExperiences": "University canteens and nearby affordable restaurants serving concentrated student demand.",
+          "whenOccurs": "Meal preparation and peak service periods, especially when class schedules or campus events change demand.",
+          "currentWorkaround": "Vendors rely on experience, rough estimates, WhatsApp messages and walk-in demand.",
+          "whyWorkaroundUnsatisfactory": "Manual forecasting is inconsistent; vendors learn about demand only after preparation, while fragmented messages create errors and congestion.",
+          "evidenceSource": "Business-side hypothesis requiring vendor interviews and a short pilot using pre-order data.",
+          "evidenceStrength": "Strong"
+        }
+      ],
+      "primaryFrictionId": "f-1",
+      "confidenceEvidenceNeeded": "Survey at least 50 DGU students, observe lunch queues and stock-outs across five weekdays, interview at least three food vendors, and run a two-week pre-order pilot measuring wait-time reduction, fulfilment rate and repeat usage."
+    },
+    "mission2": {
+      "functionalJob": "Secure an affordable meal that is available at a predictable time, without waiting in a queue or repeatedly checking multiple vendors.",
+      "emotionalJob": "Feel confident and in control of daily meals, without the stress of running out of time, exceeding a student budget or discovering that preferred food is unavailable.",
+      "socialJob": "Be seen as organised, punctual and capable of balancing academics, health and personal spending.",
+      "primaryJTBD": {
+        "motivationAction": "pre-order a suitable, affordable meal for a confirmed pickup time",
+        "desiredOutcome": "I can eat on time, stay within budget and return to class without uncertainty or avoidable waiting",
+        "situation": "my classes or academic commitments leave only a short meal break and campus outlets are likely to be crowded"
+      },
+      "addressedFriction": "The JTBD directly addresses the primary friction by replacing uncertain walk-in availability and queues with advance menu visibility, order confirmation and scheduled pickup."
+    },
+    "mission3": {
+      "broadCustomerGroup": "Higher-education students who regularly purchase prepared meals in and around university campuses",
+      "specificSegment": "DBS Global University hostel residents and day scholars who buy at least four campus or nearby meals per week and frequently have short meal breaks",
+      "demographicsRole": "Primarily 20–27-year-old undergraduate and postgraduate students; secondary buyer group: campus canteen operators and nearby food vendors",
+      "geography": "DBS Global University campus and food outlets within an initial 2-km service radius in Dehradun",
+      "situationContext": "Between classes, during lunch and dinner peaks, before examinations and on event days when students have limited time and outlets face concentrated demand",
+      "buyingBehaviour": "Frequent ₹80–₹150 meal purchases, UPI-led payments, preference for visible value and convenience, and strong influence from classmates, reviews and WhatsApp recommendations",
+      "willingnessToPay": "Students are expected to pay ₹80–₹150 per meal but should not face a separate booking fee; willingness to adopt depends on price parity, reliable fulfilment and time saved",
+      "reachStrategy": "Class and hostel WhatsApp groups, cafeteria-table QR codes, student ambassadors, society partnerships, orientation events, campus posters and vendor counters",
+      "beachheadSegment": "DGU students aged 20–27 who purchase at least four prepared meals per week and have meal breaks shorter than 45 minutes, beginning with hostel residents and first-year MBA cohorts"
+    },
+    "mission4": {
+      "customerPain": "Students waste limited meal breaks in queues and still face uncertain availability, inconsistent value and repeated decision-making.",
+      "desiredGain": "A confirmed affordable meal, predictable pickup time, shorter waiting, clearer spending and fewer skipped or rushed meals.",
+      "productService": "A campus-focused mobile platform for live menus, meal pre-orders, pickup slots, value bundles, subscriptions and vendor demand visibility",
+      "mainBenefit": "Reliable meal access at campus prices with faster pickup and no separate student booking fee",
+      "reasonToBelieve": "The model will be validated through one campus-canteen partnership, live inventory updates and a two-week pilot measuring order fulfilment, median pickup wait and repeat usage; these are planned proof points, not completed evidence.",
+      "reasonHasEvidence": true,
+      "cvpStatement": "For time-constrained DGU students who struggle with queues and uncertain meal availability, MessMate provides campus-priced meal pre-ordering with confirmed pickup slots, so they can eat on time, control spending and return to class without avoidable waiting.",
+      "whyChooseOverDoingNothing": "Doing nothing means repeatedly losing time, accepting stock-outs or paying more for delivery. MessMate requires only a short advance order while preserving familiar vendors and campus-level pricing."
+    },
+    "mission5": {
+      "alternatives": [
+        {
+          "id": "alt-1",
+          "name": "Swiggy / Zomato",
+          "type": "Indirect Competitor",
+          "priceCost": "Indicative ₹80–₹250+ per order plus applicable delivery/platform charges; local checkout varies",
+          "mainOffer": "Broad restaurant discovery, ordering, payment and delivery",
+          "mainStrength": "Large selection, familiar interfaces and established payment/logistics systems",
+          "mainWeakness": "Delivery fees, variable delivery time and limited focus on campus pickup, meal subscriptions or canteen demand forecasting",
+          "evidenceSource": "Publicly observable app model; Dehradun outlet prices and fees remain to be verified",
+          "evidenceStrength": "Strong",
+          "axisXScore": 4,
+          "axisYScore": 7
+        },
+        {
+          "id": "alt-2",
+          "name": "Walk-in campus canteen purchase",
+          "type": "Do Nothing / Status Quo",
+          "priceCost": "Indicative ₹60–₹150 per meal; direct campus price audit pending",
+          "mainOffer": "Immediate purchase from familiar on-campus food counters",
+          "mainStrength": "No new app behaviour, nearby location and familiar campus pricing",
+          "mainWeakness": "Queues, stock-outs, limited advance visibility and no confirmed pickup slot",
+          "evidenceSource": "Working assumption based on the current walk-in process; direct timing and price observations pending",
+          "evidenceStrength": "Strong",
+          "axisXScore": 7,
+          "axisYScore": 3
+        },
+        {
+          "id": "alt-3",
+          "name": "WhatsApp or phone pre-order with a nearby vendor",
+          "type": "Substitute",
+          "priceCost": "Indicative ₹80–₹150 per meal; vendor-specific and pending verification",
+          "mainOffer": "Manual advance ordering and pickup coordination with an individual outlet",
+          "mainStrength": "Familiar direct relationship and little technology learning",
+          "mainWeakness": "Fragmented menus, manual confirmation, no cross-vendor comparison, weak order tracking and limited demand analytics",
+          "evidenceSource": "Hypothesised workaround requiring student and vendor interviews",
+          "evidenceStrength": "Strong",
+          "axisXScore": 6,
+          "axisYScore": 5
+        }
+      ],
+      "axisXLabel": "General-Purpose Ordering ↔ Campus-Specialized",
+      "axisYLabel": "Walk-In Uncertainty ↔ Confirmed Pickup Reliability",
+      "ventureAxisXScore": 9,
+      "ventureAxisYScore": 9,
+      "desiredAssociatedPosition": "MessMate should own the mental position of the campus meal operating system: more specialized than delivery aggregators and more reliable than walk-in or WhatsApp ordering, while preserving familiar vendors and student-level prices."
+    },
+    "mission6": {
+      "targetCustomer": "time-constrained DGU students who regularly buy prepared meals",
+      "category": "campus meal pre-ordering and demand-coordination platform",
+      "primaryBenefit": "reliable meal access at campus prices with faster pickup and no separate student booking fee",
+      "mainAlternative": "general delivery aggregators and uncertain walk-in ordering",
+      "mainDifferentiation": "Campus-specific menus, price-parity pickup, capped pickup slots and vendor demand visibility rather than general-purpose delivery",
+      "reasonToBelieve": "its outlet-confirmed inventory, capped pickup slots and campus-specific demand workflow are designed for concentrated campus meal periods; performance remains subject to pilot validation",
+      "reasonHasEvidence": true,
+      "positioningStatement": "For time-constrained DGU students who regularly buy prepared meals, MessMate is a campus meal pre-ordering and demand-coordination platform that provides reliable meal access at campus prices with faster pickup and no separate student booking fee, unlike general delivery aggregators and uncertain walk-in ordering, because its outlet-confirmed inventory, capped pickup slots and campus-specific demand workflow are designed for concentrated campus meal periods; performance remains subject to pilot validation."
+    },
+    "mission7": {
+      "revenueModel": "Commission",
+      "otherRevenueModel": "",
+      "sellingPrice": 12,
+      "variableCost": 3,
+      "monthlyFixedCost": 25000,
+      "expectedCustomers": 350,
+      "purchasesPerCustomer": 10,
+      "priceEvidenceSource": "Planning assumption: average meal value ₹120 and a 10% vendor commission produce approximately ₹12 platform revenue per fulfilled order. Validate through at least three vendor negotiations and a live price-parity pilot.",
+      "costEvidenceSource": "Planning assumption: ₹3 variable cost per order for payment processing, notifications, rewards and support; ₹25,000 lean monthly fixed cost for technology, campus operations and merchant support. Supplier quotations are pending.",
+      "scenarios": {
+        "ambitious": {
+          "notes": "An official campus partnership, six or more outlets, strong ambassador adoption, repeat meal bundles and reliable pickup performance allow 800 active students to average twelve monthly orders.",
+          "variableCost": 0,
+          "purchasesPerCustomer": 12,
+          "sellingPrice": 0,
+          "customers": 800,
+          "monthlyFixedCost": 0
+        },
+        "base": {
+          "monthlyFixedCost": 0,
+          "variableCost": 0,
+          "sellingPrice": 0,
+          "customers": 350,
+          "notes": "Three reliable outlets participate, QR and WhatsApp acquisition reaches the beachhead, fulfilment remains dependable and 350 active students average ten monthly orders.",
+          "purchasesPerCustomer": 10
+        },
+        "conservative": {
+          "sellingPrice": 0,
+          "customers": 150,
+          "variableCost": 0,
+          "purchasesPerCustomer": 6,
+          "notes": "Only one outlet joins, awareness depends mainly on peer referrals, menus are updated manually and students continue using walk-in ordering. This produces 150 active customers completing six orders each per month.",
+          "monthlyFixedCost": 0
+        }
+      }
+    },
+    "mission8": {
+      "totalPotentialCustomers": 400000,
+      "totalCustomersEvidence": "Planning estimate of 400,000 higher-education students in Uttarakhand. AISHE 2022–23 parliamentary data reports 214,265 female enrolments; the exact all-gender total and meal-purchasing proportion must be verified before investment decisions.",
+      "annualSpendPerCustomer": 1440,
+      "annualSpendEvidence": "Derived from Mission 7 base economics: ₹12 platform revenue per order × 10 orders per active customer per month × 12 months = ₹1,440 annual platform revenue per active customer.",
+      "serviceableCustomers": 40000,
+      "serviceableEvidence": "Working estimate of 40,000 students across reachable Dehradun higher-education clusters. Replace with institution-wise enrolment and hostel data during validation.",
+      "obtainableCustomers": 4200,
+      "obtainableEvidence": "4,200 obtainable customer accounts over 12 months, equivalent to the Mission 7 base trajectory of 350 active customers per month × 12. This is 10.5% of the assumed Dehradun SAM and requires phased expansion beyond DGU, six participating outlets and strong retention.",
+      "mostUrgentAssumption": "The most urgent assumption is whether at least 350 students will complete ten orders per month while participating vendors accept an approximately 10% commission without raising student prices."
+    },
+    "mission9": {
+      "firstCustomerSegment": "DGU hostel residents and first-year MBA students who buy at least four prepared meals weekly and usually have meal breaks shorter than 45 minutes",
+      "coreMessage": "Skip the queue—not the meal. Pre-order campus-priced food and collect it at your confirmed time.",
+      "callToAction": "Scan the MessMate QR, choose your meal and reserve your first pickup slot today.",
+      "reachLocations": "Canteen counters, hostel common areas, classrooms, student-club events, class WhatsApp groups and nearby participating food outlets",
+      "channels": [
+        {
+          "evidenceReason": "Planning estimate: 20% lead-to-first-order conversion. Validate through tagged QR scans, unique coupons and first-order records.",
+          "id": "ch-1",
+          "expectedCustomers": 100,
+          "budget": 7000,
+          "expectedLeads": 500,
+          "whyFitsCustomer": "The decision and consumption moment occurs at canteens, so QR signage and live demonstrations can convert students while the friction is visible.",
+          "channelName": "Campus activation and cafeteria QR"
+        },
+        {
+          "id": "ch-1790604459160",
+          "channelName": "WhatsApp communities and student ambassadors",
+          "whyFitsCustomer": "Class and hostel groups offer concentrated access, peer trust and rapid clarification without broad paid-media waste.",
+          "budget": 5000,
+          "expectedLeads": 700,
+          "expectedCustomers": 120,
+          "evidenceReason": "Planning estimate: 17.1% conversion from opted-in outreach. Validate by group-specific links and ambassador codes."
+        },
+        {
+          "id": "ch-1790604461194",
+          "channelName": "Referral programme",
+          "whyFitsCustomer": "Meal choice is socially visible and frequent; satisfied users can demonstrate a successful pickup and invite classmates at low acquisition cost.",
+          "budget": 6000,
+          "expectedLeads": 400,
+          "expectedCustomers": 120,
+          "evidenceReason": "Planning estimate: 30% conversion among referred prospects using a two-sided meal-credit test; no historical benchmark yet."
+        }
+      ],
+      "experiment30Days": {
+        "week2": {
+          "action": "Launch a five-day pre-order pilot with two outlets and a controlled group of 50 students.",
+          "responsibility": "Founder — Operations and Growth",
+          "target": "50 activated users, at least 150 fulfilled orders and minimum 90% order fulfilment",
+          "channel": "Cafeteria QR activation, WhatsApp communities and student ambassadors",
+          "learningQuestion": "Can outlet-confirmed inventory and pickup slots deliver a reliable first transaction without slowing vendors?",
+          "metric": "Activation rate, fulfilled orders, cancellations, median pickup wait and support incidents"
+        },
+        "week1": {
+          "metric": "Interview completion, median observed wait, stock-out frequency, vendor commission acceptance and waitlist conversion",
+          "responsibility": "Founder — Customer Research and Partnerships",
+          "channel": "Direct student interviews, vendor meetings, cafeteria observation and WhatsApp waitlist",
+          "target": "50 student interviews, three vendor discussions, two pilot commitments and 100 waitlist sign-ups",
+          "learningQuestion": "Which meal friction occurs most often, and what commission and operating process will vendors accept?",
+          "action": "Interview students, observe meal queues, recruit two pilot outlets, digitise their menus and create tagged QR acquisition materials."
+        },
+        "week3": {
+          "learningQuestion": "Which users repeat, which channel acquires them economically and which feature produces measurable time savings?",
+          "channel": "In-app prompts, referral codes, WhatsApp follow-ups and short interviews",
+          "metric": "Repeat rate, orders per customer, CAC by channel, fulfilment rate, complaints and satisfaction score",
+          "responsibility": "Founder — Analytics and Customer Experience",
+          "target": "150 active users, 500 cumulative fulfilled orders and at least 30% seven-day repeat usage",
+          "action": "Expand the cohort, test meal bundles and referrals, and collect structured student and vendor feedback."
+        },
+        "week4": {
+          "target": "250 active users, 1,000 cumulative fulfilled orders, 95% fulfilment and blended CAC below ₹60",
+          "responsibility": "Founder with pilot outlet partners",
+          "learningQuestion": "Is the evidence strong enough to retain the commission model and expand beyond the initial DGU beachhead?",
+          "action": "Fix the largest workflow failure, remove low-value features, onboard a third outlet and relaunch the strongest acquisition channel.",
+          "channel": "Founder review, outlet workshop, product update and targeted campus relaunch",
+          "metric": "Validated assumptions, median pickup wait, fulfilment, repeat usage, CAC and revised unit economics"
+        }
+      }
+    },
+    "mission10": {
+      "coreAssumptionTested": "At least 50 DGU students will place a campus-priced pre-order, and at least 30% will order again within seven days when fulfilment exceeds 90% and median pickup waiting time remains below seven minutes. \n",
+      "features": [
+        {
+          "customerNeedAddressed": "Know what affordable food is actually available before walking to the outlet",
+          "evidenceReason": "Directly derived from the primary friction; validate through five-day inventory accuracy and stock-out logs",
+          "name": "Live menu and confirmed item availability",
+          "whyNeeded": "Removes the uncertainty and stock-out friction identified in Mission 1",
+          "id": "feat-1",
+          "priority": "Must Have"
+        },
+        {
+          "id": "feat-1790604506833",
+          "name": "Pre-order with capped pickup slots",
+          "customerNeedAddressed": "Reserve a meal for a predictable collection time during a short break",
+          "priority": "Must Have",
+          "whyNeeded": "Tests the core promise of reducing queues without overwhelming the vendor",
+          "evidenceReason": "Central MVP hypothesis; validate median pickup wait, slot adherence and fulfilment during the pilot"
+        },
+        {
+          "id": "feat-1790604508861",
+          "name": "Vendor order dashboard and status confirmation",
+          "customerNeedAddressed": "Receive reliable acceptance, preparation and ready-for-pickup status",
+          "priority": "Must Have",
+          "whyNeeded": "Customer reliability depends on a simple outlet workflow and confirmed inventory",
+          "evidenceReason": "Operational assumption requiring usability testing with at least two vendor teams"
+        },
+        {
+          "id": "feat-1790604510896",
+          "name": "UPI payment and digital receipt",
+          "customerNeedAddressed": "Complete a cashless transaction quickly and maintain clear spending records",
+          "priority": "Could Have",
+          "whyNeeded": "Reduces checkout friction and supports transaction-level unit economics",
+          "evidenceReason": "Common student payment behaviour is assumed; payment preference must be measured in interviews"
+        },
+        {
+          "id": "feat-1790604512933",
+          "name": "Repeat order, rating and referral tools",
+          "customerNeedAddressed": "Reorder trusted meals, share feedback and invite classmates",
+          "priority": "Could Have",
+          "whyNeeded": "Supports retention and low-cost growth after the core fulfilment loop works",
+          "evidenceReason": "Included only after fulfilment is proven; validate through repeat usage and referral conversion"
+        }
+      ],
+      "excludedFeatures": "Native Android or iOS apps, delivery fleet, AI recommendations, loyalty wallet, dynamic pricing, automated refunds, multi-campus administration, advanced subscriptions and advertising marketplace.",
+      "mvpPurpose": "Validate whether a simple web-based menu, confirmed pre-order and pickup-slot workflow creates repeat usage while remaining operationally manageable for campus food vendors.",
+      "mvpCoreUser": "DGU students aged 20–27 who purchase at least four prepared meals per week and have meal breaks shorter than 45 minutes, beginning with hostel residents and first-year MBA cohorts",
+      "mvpCoreProblem": "Students lose time in queues and still face uncertainty about whether preferred, affordable meals will be available when their classes end.",
+      "successMetric": "At least 150 fulfilled pilot orders from 50 activated users, minimum 90% fulfilment, median pickup wait below seven minutes and at least 30% seven-day repeat usage."
+    },
+    "mission11": {
+      "topAssumptions": [
+        {
+          "evidenceNeeded": "Timestamped order records showing first and repeat purchases, cohort repeat rate, orders per user, cancellations and pickup waiting time.",
+          "assumption": "At least 50 DGU students will place a campus-priced pre-order and at least 30% will order again within seven days.",
+          "howToTest": "Run a two-week pilot with 50 activated students across two outlets and expose all users to the same confirmed-pickup proposition.",
+          "whyItMatters": "If students do not repeat, projected order frequency, contribution revenue and customer-acquisition payback fail.",
+          "id": "assump-1"
+        },
+        {
+          "evidenceNeeded": "Written commercial terms, transaction settlements, menu-price comparisons, vendor margin feedback and continued participation after the pilot.",
+          "assumption": "Food vendors will accept an approximately 10% commission while maintaining price parity and reliable menu updates.",
+          "howToTest": "Negotiate with at least three vendors, secure two written pilot commitments and run real transactions at the proposed commission for two weeks.",
+          "id": "assump-2",
+          "whyItMatters": "Without sufficient commission and price parity, MessMate either lacks revenue or loses its student value advantage; without vendor participation, the marketplace has no supply."
+        },
+        {
+          "whyItMatters": "Reliability is the core differentiation. Operational failure would recreate the same uncertainty and queues MessMate promises to remove.",
+          "howToTest": "Operate capped slots at two outlets during peak periods, audit inventory mismatches and compare promised versus actual ready and pickup times.",
+          "evidenceNeeded": "Timestamped preparation and pickup logs, fulfilment percentage, stock-out rate, median and 90th-percentile wait time, complaints and vendor workload observations.",
+          "id": "assump-3",
+          "assumption": "Outlet-confirmed inventory and capped pickup slots can achieve at least 90% fulfilment with a median pickup wait below seven minutes."
+        }
+      ]
+    },
+    "mission12": {
+      "reflectionNotes": "",
+      "finalizedAt": "2026-09-28T14:10:32.039Z",
+      "finalReviewCompleted": true
+    },
+    "assignment2": {
+      "appUrl": "https://messmate-dgu.info92644.chatgpt.site",
+      "submittedAt": "2026-09-29T10:32:43.709Z",
+      "lastUpdatedAt": "2026-09-29T10:32:56.164Z"
+    },
+    "updatedAtServer": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1790593312,
+      "nanoseconds": 762000000
+    }
+  }
+}
