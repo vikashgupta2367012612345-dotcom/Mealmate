@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { MealItem, PickupSlot, Order, OrderStatus, UserProfile } from '../types';
+import { MealItem, PickupSlot, Order, OrderStatus, UserProfile, RegisteredAccount } from '../types';
 import { STARTER_MEALS, STARTER_SLOTS, INITIAL_ORDERS, VENTURE_BLUEPRINT } from '../data/initialData';
 import {
   calculateCanteenSchedule,
@@ -24,8 +24,9 @@ interface AppContextType {
   selectedSlotId: string;
   latestPlacedOrder: Order | null;
   isLoggedIn: boolean;
-  loginUser: (emailOrRoll: string, password?: string) => boolean;
-  registerUser: (userData: { name: string; rollNo: string; email: string; hostelBlock?: string; password?: string }) => void;
+  loginUser: (emailOrRoll: string, password?: string) => { success: boolean; error?: string };
+  registerUser: (userData: { name: string; email: string; phone?: string; rollNo?: string; hostelBlock?: string; password?: string }) => { success: boolean; error?: string };
+  registeredAccounts: RegisteredAccount[];
   logoutUser: () => void;
   toastMessage: string | null;
   showToast: (msg: string) => void;
@@ -165,11 +166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }));
       } catch (e) {}
     }
-    return INITIAL_ORDERS.map(o => ({
-      ...o,
-      vendorName: 'DGU Central Canteen',
-      items: (o.items || []).map(i => ({ ...i, vendorName: 'DGU Central Canteen' }))
-    }));
+    return [];
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
@@ -267,67 +264,143 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [slots, selectedSlotId]);
 
-  const loginUser = useCallback((identifier: string, password?: string): boolean => {
-    const trimmed = identifier.trim();
-    if (!trimmed) return false;
-    const isEmail = trimmed.includes('@');
-    const isPhone = /^[0-9+ -]{10,14}$/.test(trimmed);
+  const [registeredAccounts, setRegisteredAccounts] = useState<RegisteredAccount[]>(() => {
+    try {
+      localStorage.removeItem('mm_registered_accounts_v1'); // Purge legacy dummy accounts
+      const saved = localStorage.getItem('mm_registered_accounts_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
 
-    let name = 'Vikash Kumar Gupta';
-    let rollNo = '0251MBA621';
-    let email = 'vikash.0251mba621@dgu.ac.in';
+  useEffect(() => {
+    try {
+      localStorage.setItem('mm_registered_accounts_v2', JSON.stringify(registeredAccounts));
+    } catch (e) {}
+  }, [registeredAccounts]);
 
-    if (isEmail) {
-      email = trimmed.toLowerCase();
-      const prefix = trimmed.split('@')[0];
-      name = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-    } else if (isPhone) {
-      rollNo = '0251MBA621';
-      email = `student.${trimmed.slice(-4)}@dgu.ac.in`;
-      name = 'Vikash Kumar Gupta';
-    } else {
-      rollNo = trimmed.toUpperCase();
-      email = `${trimmed.toLowerCase()}@dgu.ac.in`;
-      name = trimmed.toUpperCase() === '0251MBA621' ? 'Vikash Kumar Gupta' : `Student (${trimmed.toUpperCase()})`;
+  const loginUser = useCallback((identifier: string, password?: string): { success: boolean; error?: string } => {
+    const cleanIdentifier = identifier.trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    if (!cleanIdentifier) {
+      return { success: false, error: 'Please enter your registered email address or mobile number.' };
+    }
+
+    if (!cleanPassword) {
+      return { success: false, error: 'Please enter your account password.' };
+    }
+
+    // Look up registered user by email or phone or rollNo
+    const account = registeredAccounts.find(acc =>
+      acc.email.toLowerCase() === cleanIdentifier ||
+      (acc.phone && acc.phone.replace(/\D/g, '') === cleanIdentifier.replace(/\D/g, '')) ||
+      (acc.rollNo && acc.rollNo.toLowerCase() === cleanIdentifier)
+    );
+
+    if (!account) {
+      return {
+        success: false,
+        error: `No account registered with "${identifier.trim()}". Please click "Create Account" below to register.`
+      };
+    }
+
+    if (account.password && account.password !== cleanPassword) {
+      return {
+        success: false,
+        error: 'Incorrect password. Please verify your credentials and try again.'
+      };
     }
 
     const updated: UserProfile = {
-      uid: currentUser.uid && currentUser.uid !== 'user-guest' ? currentUser.uid : `user-${Date.now()}`,
-      name: currentUser.name && currentUser.name !== 'Guest Student' ? currentUser.name : name,
-      rollNo,
-      email,
+      uid: account.uid,
+      name: account.name,
+      email: account.email,
+      phone: account.phone,
+      rollNo: account.rollNo || '0251MBA621',
       role: 'student',
       savedOrdersCount: Math.max(1, currentUser.savedOrdersCount || 1),
-      hostelBlock: currentUser.hostelBlock || 'Hostel Block B',
+      hostelBlock: account.hostelBlock || 'Campus Hostels',
       isLoggedIn: true
     };
     setCurrentUser(updated);
-    localStorage.setItem('mm_user_auth_v1', JSON.stringify(updated));
-    showToast(`Welcome back, ${updated.name.split(' ')[0]}!`);
-    return true;
-  }, [currentUser, showToast]);
+    try {
+      localStorage.setItem('mm_user_auth_v1', JSON.stringify(updated));
+    } catch (e) {}
+    showToast(`Welcome back, ${updated.name.split(' ')[0]}! Logged in successfully.`);
+    return { success: true };
+  }, [registeredAccounts, currentUser, showToast]);
 
   const registerUser = useCallback((userData: {
     name: string;
-    rollNo: string;
     email: string;
+    phone?: string;
+    rollNo?: string;
     hostelBlock?: string;
     password?: string;
-  }) => {
-    const newUser: UserProfile = {
+  }): { success: boolean; error?: string } => {
+    const cleanName = userData.name.trim();
+    const cleanEmail = userData.email.trim().toLowerCase();
+    const cleanPhone = (userData.phone || '').trim();
+    const cleanRollNo = (userData.rollNo || '').trim().toUpperCase();
+    const cleanPassword = (userData.password || '').trim();
+
+    if (!cleanName || cleanName.length < 2) {
+      return { success: false, error: 'Please enter your full name.' };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { success: false, error: 'Please enter a valid email address (e.g. yourname@gmail.com or student@dgu.ac.in).' };
+    }
+
+    if (!cleanPassword || cleanPassword.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long.' };
+    }
+
+    // Check duplicate email
+    const exists = registeredAccounts.some(acc => acc.email.toLowerCase() === cleanEmail);
+    if (exists) {
+      return {
+        success: false,
+        error: `An account with email "${cleanEmail}" is already registered. Please switch to "Log In".`
+      };
+    }
+
+    const newAccount: RegisteredAccount = {
       uid: `user-${Date.now()}`,
-      name: userData.name.trim(),
-      rollNo: userData.rollNo.trim().toUpperCase(),
-      email: userData.email.trim().toLowerCase(),
-      hostelBlock: userData.hostelBlock || 'Hostel Block B',
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone || undefined,
+      rollNo: cleanRollNo || undefined,
+      hostelBlock: userData.hostelBlock || 'Campus Hostels',
+      password: cleanPassword,
+      createdAt: new Date().toISOString()
+    };
+
+    setRegisteredAccounts(prev => [newAccount, ...prev]);
+
+    const newUser: UserProfile = {
+      uid: newAccount.uid,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone || undefined,
+      rollNo: cleanRollNo || undefined,
+      hostelBlock: newAccount.hostelBlock,
       role: 'student',
       savedOrdersCount: 0,
       isLoggedIn: true
     };
     setCurrentUser(newUser);
-    localStorage.setItem('mm_user_auth_v1', JSON.stringify(newUser));
-    showToast(`Account created! Welcome to MealMate, ${newUser.name.split(' ')[0]}!`);
-  }, [showToast]);
+    try {
+      localStorage.setItem('mm_user_auth_v1', JSON.stringify(newUser));
+    } catch (e) {}
+    showToast(`Account created! Welcome to MealMate, ${cleanName.split(' ')[0]}!`);
+    return { success: true };
+  }, [registeredAccounts, showToast]);
 
   const logoutUser = useCallback(() => {
     const loggedOutUser: UserProfile = {
@@ -761,6 +834,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn,
         loginUser,
         registerUser,
+        registeredAccounts,
         logoutUser,
         activeRole,
         selectedKitchen,

@@ -75,6 +75,17 @@ export interface UserProfile {
   isLoggedIn?: boolean;
 }
 
+export interface RegisteredAccount {
+  uid: string;
+  name: string;
+  email: string;
+  phone?: string;
+  rollNo?: string;
+  hostelBlock?: string;
+  password?: string;
+  createdAt: string;
+}
+
 export interface VentureMetrics {
   sellingPrice: number;
   variableCost: number;
