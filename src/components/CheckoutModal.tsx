@@ -35,7 +35,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setSelectedSlotId,
     orders,
     currentUser,
-    placePreOrder
+    placePreOrder,
+    canteenSchedule
   } = useApp();
 
   const [instructions, setInstructions] = useState('');
@@ -45,7 +46,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // 1. Kitchen Load & Queue Analysis
-  const canteenName = cart[0]?.meal.vendorName || 'Green Leaf Canteen';
+  const canteenName = 'DGU Central Canteen';
 
   const activeKitchenOrders = useMemo(() => {
     return orders.filter(
@@ -211,6 +212,29 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="p-3 mb-4 bg-[#fee2e2] text-[#991b1b] rounded-md text-xs flex items-center gap-2 border border-[#fecaca]">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {/* Real-Time Operating Hours Advisory Banner */}
+        {!canteenSchedule.isOpen ? (
+          <div className="p-3 mb-4 bg-[#fff1f2] text-[#9f1239] rounded-lg text-xs flex items-start gap-2.5 border border-[#fecdd3]">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#e11d48] mt-1 shrink-0" />
+            <div>
+              <strong className="block font-bold text-[#881337]">
+                DGU Central Canteen is Currently Closed (10:00 AM – 11:00 PM Daily)
+              </strong>
+              <span className="text-[11px] text-[#9f1239]">
+                {canteenSchedule.timeRemainingText}. You are placing an advance pre-order that will be cooked and ready for the 10:00 AM morning batch!
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-2.5 mb-4 bg-[#ecfdf5] text-[#065f46] rounded-lg text-xs flex items-center justify-between border border-[#a7f3d0]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+              <span><strong>Canteen Open Now:</strong> Serving live until 11:00 PM</span>
+            </div>
+            <span className="text-[11px] font-mono text-[#047857]">{canteenSchedule.currentTimeFormatted}</span>
           </div>
         )}
 

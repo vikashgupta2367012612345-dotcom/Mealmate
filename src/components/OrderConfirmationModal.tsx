@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Check, QrCode, Clock, ArrowRight, ChefHat } from 'lucide-react';
+import { OrderStatus, OrderItem } from '../types';
+import { Check, QrCode, ArrowRight, Clock } from 'lucide-react';
 
 interface OrderConfirmationModalProps {
   isOpen: boolean;
@@ -13,15 +14,15 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationModalProps> = ({
   onClose,
   onOpenMyOrders
 }) => {
-  const { latestPlacedOrder, switchUserRole } = useApp();
+  const { latestPlacedOrder } = useApp();
 
   if (!isOpen || !latestPlacedOrder) return null;
 
   const order = latestPlacedOrder;
-  const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(' + ');
+  const itemsSummary = order.items.map((i: OrderItem) => `${i.quantity}x ${i.name}`).join(' + ');
 
   const getStepStatus = (step: number) => {
-    const statusMap = {
+    const statusMap: Record<OrderStatus, number> = {
       'Accepted': 1,
       'Preparing': 2,
       'Ready': 3,
@@ -52,7 +53,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationModalProps> = ({
 
         <p className="text-xs sm:text-sm text-[#64736d] leading-relaxed max-w-md mx-auto mb-6">
           <strong className="text-[#16342e]">{itemsSummary}</strong> is booked for{' '}
-          <strong className="text-[#16342e]">{order.slotLabel}</strong> at {order.vendorName}.
+          <strong className="text-[#16342e]">{order.slotLabel}</strong> at DGU Central Canteen.
         </p>
 
         {/* Token Pass Card */}
@@ -65,7 +66,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationModalProps> = ({
           </div>
           <div className="flex items-center justify-center gap-2 text-xs text-[#126b55] font-medium mt-1">
             <QrCode className="w-4 h-4" />
-            <span>Show at {order.vendorName} counter · Pay ₹{order.total}</span>
+            <span>Show at DGU Central Canteen counter · Pay ₹{order.total}</span>
           </div>
         </div>
 
@@ -79,7 +80,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationModalProps> = ({
           <div className="grid grid-cols-4 gap-1 text-[11px]">
             {[
               { step: 1, label: 'Accepted', desc: 'In queue' },
-              { step: 2, label: 'Preparing', desc: 'On fire' },
+              { step: 2, label: 'Preparing', desc: 'Cooking' },
               { step: 3, label: 'Ready', desc: 'At counter' },
               { step: 4, label: 'Picked up', desc: 'Collected' }
             ].map(({ step, label, desc }) => {
@@ -118,26 +119,15 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationModalProps> = ({
               onClose();
               onOpenMyOrders();
             }}
-            className="w-full py-3 bg-[#16342e] hover:bg-[#0e241f] text-white text-xs sm:text-sm font-bold rounded-md flex items-center justify-center gap-2 shadow-xs"
+            className="w-full py-3 bg-[#16342e] hover:bg-[#0e241f] text-white text-xs sm:text-sm font-bold rounded-md flex items-center justify-center gap-2 shadow-xs cursor-pointer"
           >
             <span>Track in My Orders</span>
             <ArrowRight className="w-4 h-4 text-[#d9f04a]" />
           </button>
 
           <button
-            onClick={() => {
-              onClose();
-              switchUserRole('vendor', order.vendorName);
-            }}
-            className="w-full py-2.5 bg-[#f0eee6] hover:bg-[#e4e6df] text-[#16342e] text-xs font-bold rounded-md flex items-center justify-center gap-1.5 border border-[#d9ded5]"
-          >
-            <ChefHat className="w-4 h-4 text-[#126b55]" />
-            <span>Switch to {order.vendorName} Kitchen View (Demo Tester)</span>
-          </button>
-
-          <button
             onClick={onClose}
-            className="text-xs text-[#64736d] hover:text-[#16342e] font-medium underline pt-1 block mx-auto"
+            className="text-xs text-[#64736d] hover:text-[#16342e] font-medium underline pt-1 block mx-auto cursor-pointer"
           >
             Back to menu
           </button>

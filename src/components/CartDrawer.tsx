@@ -13,7 +13,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClose,
   onProceedToCheckout
 }) => {
-  const { cart, removeFromCart, updateCartQuantity, slots, selectedSlotId, setSelectedSlotId, showToast } = useApp();
+  const { cart, removeFromCart, updateCartQuantity, slots, selectedSlotId, setSelectedSlotId, showToast, canteenSchedule } = useApp();
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [appliedPromo, setAppliedPromo] = useState('');
@@ -120,7 +120,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         {meal.name}
                       </h4>
                       <p className="text-[11px] text-[#64736d] truncate">
-                        {meal.vendorName} · ₹{meal.price} each
+                        DGU Central Canteen · ₹{meal.price} each
                       </p>
                       <div className="text-xs font-bold text-[#16342e] mt-1">
                         ₹{meal.price * quantity}
@@ -245,6 +245,29 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               </div>
 
+              {/* Canteen Schedule Pill */}
+              <div
+                className={`p-2.5 rounded-lg border text-[11px] flex items-center justify-between ${
+                  canteenSchedule.isOpen
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border-rose-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      canteenSchedule.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                    }`}
+                  />
+                  <span className="font-semibold">
+                    {canteenSchedule.isOpen
+                      ? 'Canteen Open Now (until 11:00 PM)'
+                      : 'Canteen Closed (Opens at 10:00 AM Everyday)'}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono opacity-80">{canteenSchedule.currentTimeFormatted}</span>
+              </div>
+
               <div className="flex items-center gap-1.5 text-[11px] text-[#64736d] bg-[#fffdf8] p-2 rounded border border-[#d9ded5]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#126b55] shrink-0" />
                 <span>Pay at pickup counter. No online payment surcharge.</span>
@@ -254,7 +277,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 onClick={() => onProceedToCheckout(discount, appliedPromo)}
                 className="w-full flex items-center justify-between bg-[#126b55] hover:bg-[#0b4c3b] text-white px-5 py-3.5 rounded-md font-bold text-sm transition-all shadow-md active:scale-[0.99]"
               >
-                <span>Continue to Pre-Order</span>
+                <span>
+                  {canteenSchedule.isOpen
+                    ? 'Continue to Pre-Order'
+                    : 'Proceed with Morning Pre-Order'}
+                </span>
                 <span className="flex items-center gap-1">
                   <span>₹{total}</span>
                   <ArrowRight className="w-4 h-4 text-[#d9f04a]" />

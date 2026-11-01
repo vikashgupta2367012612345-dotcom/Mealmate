@@ -9,7 +9,7 @@ export interface MealItem {
   type: 'veg' | 'quick' | 'protein' | 'drinks' | 'snacks' | 'combos';
   available: number;
   initialStock: number;
-  vendorName: 'Green Leaf Canteen' | 'North Block Café' | 'South Square' | string;
+  vendorName: 'DGU Central Canteen' | string;
   description?: string;
   prepTimeMinutes?: number;
   imageUrl?: string;
@@ -71,6 +71,8 @@ export interface UserProfile {
   assignedVendor?: string;
   phone?: string;
   savedOrdersCount?: number;
+  hostelBlock?: string;
+  isLoggedIn?: boolean;
 }
 
 export interface VentureMetrics {

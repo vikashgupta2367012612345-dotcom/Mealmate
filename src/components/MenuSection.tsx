@@ -16,10 +16,11 @@ import {
   Info
 } from 'lucide-react';
 
+const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
+
 export const MenuSection: React.FC = () => {
-  const { meals, addToCart, cart, activeRole, restockMeal } = useApp();
+  const { meals, addToCart, cart, activeRole, restockMeal, canteenSchedule } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<MealCategory>('all');
-  const [selectedCanteen, setSelectedCanteen] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [budgetFilter, setBudgetFilter] = useState<'all' | 'under70' | 'under5min'>('all');
   const [selectedDish, setSelectedDish] = useState<MealItem | null>(null);
@@ -35,11 +36,6 @@ export const MenuSection: React.FC = () => {
   const filteredMeals = meals.filter((meal) => {
     // Category match
     if (selectedCategory !== 'all' && meal.type !== selectedCategory) {
-      return false;
-    }
-
-    // Canteen match
-    if (selectedCanteen !== 'all' && meal.vendorName !== selectedCanteen) {
       return false;
     }
 
@@ -72,24 +68,56 @@ export const MenuSection: React.FC = () => {
   return (
     <section id="menu" className="max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
       {/* Business Trust Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3.5 bg-[#fffdf8] rounded-lg border border-[#e4e6df] mb-10 text-xs text-[#64736d]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3.5 bg-[#fffdf8] rounded-lg border border-[#e4e6df] mb-6 text-xs text-[#64736d]">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-[#126b55] shrink-0" />
-          <span><strong>DGU Verified</strong> Canteens</span>
+          <span><strong>DGU Central</strong> Canteen</span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-[#126b55] shrink-0" />
-          <span><strong>7 Min</strong> Pickup Guarantee</span>
+          <span><strong>10 AM – 11 PM</strong> Daily Hours</span>
         </div>
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[#f5a623] shrink-0" />
-          <span><strong>Zero</strong> Student Booking Fee</span>
+          <span><strong>7 Min</strong> Pickup Guarantee</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#16a34a] shrink-0" />
-          <span><strong>FSSAI</strong> Clean Kitchen Audited</span>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${canteenSchedule.isOpen ? 'bg-[#10b981] animate-pulse' : 'bg-[#e11d48]'}`} />
+          <span><strong>Status:</strong> {canteenSchedule.statusText}</span>
         </div>
       </div>
+
+      {/* Real-time Schedule Status Banner */}
+      {!canteenSchedule.isOpen ? (
+        <div className="mb-8 p-4 bg-[#fff1f2] border-2 border-[#fecdd3] rounded-xl text-xs sm:text-sm text-[#9f1239] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <span className="w-3 h-3 rounded-full bg-[#e11d48] mt-1 shrink-0" />
+            <div>
+              <strong className="block font-bold text-sm text-[#881337]">
+                DGU Central Canteen is Currently Closed (Hours: 10:00 AM – 11:00 PM Everyday)
+              </strong>
+              <p className="text-xs text-[#9f1239] mt-0.5">
+                {canteenSchedule.timeRemainingText}. You can still reserve meals now; your order will be prioritized for pickup during the 10:00 AM morning batch!
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-white rounded-full border border-[#fecdd3] font-bold text-xs text-[#e11d48] whitespace-nowrap self-end sm:self-auto">
+            Pre-Orders Active
+          </span>
+        </div>
+      ) : (
+        <div className="mb-8 p-3.5 bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl text-xs text-[#065f46] flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] animate-pulse" />
+            <span>
+              <strong>DGU Central Canteen is Open Now:</strong> Serving live counter orders until 11:00 PM everyday · {canteenSchedule.timeRemainingText}
+            </span>
+          </div>
+          <span className="hidden sm:inline font-mono font-semibold text-[11px] bg-white px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">
+            Clock: {canteenSchedule.currentTimeFormatted}
+          </span>
+        </div>
+      )}
 
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
@@ -158,20 +186,22 @@ export const MenuSection: React.FC = () => {
                       <img
                         src={special.imageUrl}
                         alt={special.name}
-                        loading="lazy"
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         onError={(e) => {
-                          const parent = (e.target as HTMLElement).parentElement;
-                          if (parent) {
-                            parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-7xl bg-[#e8dac5]">${special.emoji}</div>`;
+                          const target = e.currentTarget;
+                          if (target.getAttribute('data-fallback') !== 'true') {
+                            target.setAttribute('data-fallback', 'true');
+                            target.src = DEFAULT_FALLBACK_IMAGE;
                           }
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-7xl bg-[#e8dac5]">
-                        {special.emoji}
-                      </div>
+                      <img
+                        src={DEFAULT_FALLBACK_IMAGE}
+                        alt={special.name}
+                        className="w-full h-full object-cover"
+                      />
                     )}
 
                     {/* Gradient Overlay */}
@@ -191,7 +221,7 @@ export const MenuSection: React.FC = () => {
                     {/* Top Right: Canteen Tag */}
                     <div className="absolute top-4 right-4">
                       <span className="px-3 py-1 rounded-full bg-[#16342e]/90 text-white text-xs font-semibold backdrop-blur-xs border border-white/20">
-                        {special.vendorName}
+                        DGU Central Canteen
                       </span>
                     </div>
 
@@ -394,35 +424,13 @@ export const MenuSection: React.FC = () => {
             Full Campus Menu Catalog
           </h3>
           <p className="text-xs text-[#64736d]">
-            Filter by dining outlet, dietary preferences, or speed of preparation.
+            Filter by dietary preferences, meal categories, or speed of preparation.
           </p>
         </div>
       </div>
 
-      {/* Filters Bar: Kitchen Tabs, Category Pills & Quick Speed/Budget Tags */}
+      {/* Filters Bar: Category Pills & Quick Speed/Budget Tags */}
       <div className="space-y-3.5 mb-8">
-        {/* Campus Kitchen Selector */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold">
-          <span className="text-[#64736d] mr-1 hidden sm:inline">Outlet:</span>
-          {[
-            { id: 'all', label: 'All 3 Campus Kitchens' },
-            { id: 'Green Leaf Canteen', label: 'Green Leaf Canteen (Main Hall)' },
-            { id: 'North Block Café', label: 'North Block Café (Academic Block)' },
-            { id: 'South Square', label: 'South Square (Hostel Quad)' }
-          ].map((kitchen) => (
-            <button
-              key={kitchen.id}
-              onClick={() => setSelectedCanteen(kitchen.id)}
-              className={`px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap ${
-                selectedCanteen === kitchen.id
-                  ? 'bg-[#126b55] text-white border-[#126b55] shadow-xs'
-                  : 'bg-[#fffdf8] text-[#16342e] border-[#d9ded5] hover:border-[#126b55]'
-              }`}
-            >
-              {kitchen.label}
-            </button>
-          ))}
-        </div>
 
         {/* Category Filters */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
@@ -486,7 +494,6 @@ export const MenuSection: React.FC = () => {
           <button
             onClick={() => {
               setSelectedCategory('all');
-              setSelectedCanteen('all');
               setBudgetFilter('all');
               setSearchQuery('');
             }}
@@ -515,21 +522,22 @@ export const MenuSection: React.FC = () => {
                     <img
                       src={meal.imageUrl}
                       alt={meal.name}
-                      loading="lazy"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
-                        // If image fails, show stylish fallback with emoji
-                        const parent = (e.target as HTMLElement).parentElement;
-                        if (parent) {
-                          parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-6xl bg-[#e8dac5]">${meal.emoji}</div>`;
+                        const target = e.currentTarget;
+                        if (target.getAttribute('data-fallback') !== 'true') {
+                          target.setAttribute('data-fallback', 'true');
+                          target.src = DEFAULT_FALLBACK_IMAGE;
                         }
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-6xl bg-[#e8dac5]">
-                      {meal.emoji}
-                    </div>
+                    <img
+                      src={DEFAULT_FALLBACK_IMAGE}
+                      alt={meal.name}
+                      className="w-full h-full object-cover"
+                    />
                   )}
 
                   {/* Soft scrim gradient */}
@@ -561,7 +569,7 @@ export const MenuSection: React.FC = () => {
                   {/* Bottom Image Overlay: Canteen Name & Macro Specs */}
                   <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white text-[11px] font-medium">
                     <span className="text-white/95 drop-shadow-xs font-semibold">
-                      {meal.vendorName}
+                      DGU Central Canteen
                     </span>
                     {meal.calories && (
                       <span className="text-[#d9f04a] text-[10px] font-semibold drop-shadow-xs">

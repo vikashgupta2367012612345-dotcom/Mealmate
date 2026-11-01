@@ -15,7 +15,7 @@ export const ValueSection: React.FC = () => {
           </h2>
 
           <p className="text-sm sm:text-base text-[#4b6259] leading-relaxed max-w-xl">
-            MealMate replaces walk-in uncertainty with advance digital demand forecasting. Canteens know what to cook, students reserve confirmed pickup windows, and food waste is cut by up to 40%.
+            MealMate replaces walk-in uncertainty with advance digital demand forecasting. The central canteen knows what to cook, students reserve confirmed pickup windows, and food waste is cut by up to 40%.
           </p>
 
           {/* Stats Bar */}
@@ -74,7 +74,7 @@ export const ValueSection: React.FC = () => {
           </div>
 
           <div className="bg-[#fffdf8] border border-[#c6d7cb] p-5 rounded-lg text-xs text-[#4b6259] leading-relaxed">
-            <strong className="text-[#16342e] block mb-1">👨‍🍳 Ramesh Ji · Head Chef, Green Leaf Canteen:</strong>
+            <strong className="text-[#16342e] block mb-1">👨‍🍳 Ramesh Ji · Head Chef, DGU Central Canteen:</strong>
             “Before MealMate, we had either 30 people jamming the counter at 12:45 or leftover cold food. Now, pre-orders let us portion plates 10 minutes ahead.”
           </div>
         </div>

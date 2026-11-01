@@ -42,14 +42,19 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
               onError={(e) => {
-                // Graceful fallback to styled backdrop
-                (e.target as HTMLElement).style.display = 'none';
+                const target = e.currentTarget;
+                if (target.getAttribute('data-fallback') !== 'true') {
+                  target.setAttribute('data-fallback', 'true');
+                  target.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
+                }
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-7xl">
-              {meal.emoji}
-            </div>
+            <img
+              src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80"
+              alt={meal.name}
+              className="w-full h-full object-cover"
+            />
           )}
 
           {/* Scrim Gradient */}
@@ -58,7 +63,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           {/* Outlet & Category Badges */}
           <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white text-xs">
             <span className="font-semibold text-white/90 bg-black/40 px-2.5 py-1 rounded-md backdrop-blur-xs">
-              {meal.vendorName}
+              DGU Central Canteen
             </span>
             <span className="bg-[#d9f04a] text-[#16342e] px-2.5 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">
               {meal.tag}

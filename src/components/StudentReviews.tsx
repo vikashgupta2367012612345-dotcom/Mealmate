@@ -25,9 +25,9 @@ const INITIAL_REVIEWS: Review[] = [
     rollNo: '0251MBA104',
     dishName: 'Rajma rice bowl',
     dishEmoji: '🍛',
-    vendorName: 'Green Leaf Canteen',
+    vendorName: 'DGU Central Canteen',
     rating: 5,
-    comment: 'Literally saved me between back-to-back Marketing and Finance lectures! Walked to Green Leaf, showed token MM-39182, and my hot rajma bowl was packaged and ready. Zero wait.',
+    comment: 'Literally saved me between back-to-back Marketing and Finance lectures! Walked to DGU Central Canteen, showed token MM-39182, and my hot rajma bowl was packaged and ready. Zero wait.',
     date: 'Yesterday at 12:45 PM',
     likes: 42
   },
@@ -38,7 +38,7 @@ const INITIAL_REVIEWS: Review[] = [
     rollNo: '0241BBA088',
     dishName: 'Deluxe Student North Indian Thali',
     dishEmoji: '🍱',
-    vendorName: 'South Square',
+    vendorName: 'DGU Central Canteen',
     rating: 5,
     comment: 'The paneer butter masala portion was super generous and the gulab jamun was still warm. For ₹115, you cannot find a better full meal combo anywhere in Dehradun.',
     date: '2 days ago',
@@ -51,9 +51,9 @@ const INITIAL_REVIEWS: Review[] = [
     rollNo: '0251MBA312',
     dishName: 'Cold coffee with Choco Drizzle',
     dishEmoji: '🥤',
-    vendorName: 'North Block Café',
+    vendorName: 'DGU Central Canteen',
     rating: 5,
-    comment: 'Thick, frosty, and not overly sweet. Ordering ahead for the 1:00 PM slot means skipping the huge 25-person crowd jamming the North Block counter.',
+    comment: 'Thick, frosty, and not overly sweet. Ordering ahead for the 1:00 PM slot means skipping the huge 25-person crowd jamming the central counter.',
     date: '3 days ago',
     likes: 29
   },
@@ -64,7 +64,7 @@ const INITIAL_REVIEWS: Review[] = [
     rollNo: '0231BMC045',
     dishName: 'Steamed Chicken Momos (8 pcs)',
     dishEmoji: '🥟',
-    vendorName: 'Green Leaf Canteen',
+    vendorName: 'DGU Central Canteen',
     rating: 5,
     comment: 'The fiery red garlic chutney is legendary. Steamed fresh, super juicy filling, and pickup slot reservation guarantees they don’t run out before you arrive.',
     date: '4 days ago',
@@ -77,7 +77,7 @@ const INITIAL_REVIEWS: Review[] = [
     rollNo: '0251MSC019',
     dishName: 'Paneer tikka wrap',
     dishEmoji: '🌯',
-    vendorName: 'Green Leaf Canteen',
+    vendorName: 'DGU Central Canteen',
     rating: 4,
     comment: 'Crispy whole-wheat paratha with lots of paneer and mint mayo. Extremely convenient to eat while walking to the library.',
     date: '5 days ago',
@@ -90,7 +90,7 @@ const INITIAL_REVIEWS: Review[] = [
     rollNo: '0241MBA552',
     dishName: 'Adrak Masala Chai & 2 Samosas',
     dishEmoji: '☕',
-    vendorName: 'North Block Café',
+    vendorName: 'DGU Central Canteen',
     rating: 5,
     comment: '₹45 evening snack bliss! Samosas were piping hot and flaky. Picked it up in literally 30 seconds between tutorials.',
     date: 'This week',
@@ -99,11 +99,11 @@ const INITIAL_REVIEWS: Review[] = [
   {
     id: 'rev-7',
     studentName: 'Devansh Malhotra',
-    program: 'B.Com Hons · North Block regular',
+    program: 'B.Com Hons · Central regular',
     rollNo: '0231BCH114',
     dishName: 'Chole bhature',
     dishEmoji: '🥘',
-    vendorName: 'North Block Café',
+    vendorName: 'DGU Central Canteen',
     rating: 5,
     comment: 'The bhaturas are huge, perfectly puffed, and golden with zero grease sogginess. Amritsari chole with pickled onions hits different during cold Dehradun mornings!',
     date: '3 days ago',
@@ -154,7 +154,7 @@ export const StudentReviews: React.FC = () => {
       rollNo: currentUser.rollNo || '0251MBA621',
       dishName: newDishName,
       dishEmoji: '🍽️',
-      vendorName: 'Green Leaf Canteen',
+      vendorName: 'DGU Central Canteen',
       rating: newRating,
       comment: newComment.trim(),
       date: 'Just now',
@@ -251,13 +251,13 @@ export const StudentReviews: React.FC = () => {
                   onChange={(e) => setNewDishName(e.target.value)}
                   className="w-full p-2 bg-white border border-[#d9ded5] rounded-md text-[#16342e]"
                 >
-                  <option value="Rajma rice bowl">Rajma rice bowl (Green Leaf)</option>
-                  <option value="Chole bhature">Chole bhature (North Block)</option>
-                  <option value="Deluxe Student North Indian Thali">Deluxe Student North Indian Thali (South Square)</option>
-                  <option value="Cold coffee with Choco Drizzle">Cold coffee with Choco Drizzle (North Block)</option>
-                  <option value="Steamed Chicken Momos (8 pcs)">Steamed Chicken Momos (Green Leaf)</option>
-                  <option value="Paneer tikka wrap">Paneer tikka wrap (Green Leaf)</option>
-                  <option value="Adrak Masala Chai & 2 Samosas">Adrak Masala Chai & 2 Samosas (North Block)</option>
+                  <option value="Rajma rice bowl">Rajma rice bowl</option>
+                  <option value="Chole bhature">Chole bhature</option>
+                  <option value="Deluxe Student North Indian Thali">Deluxe Student North Indian Thali</option>
+                  <option value="Cold coffee with Choco Drizzle">Cold coffee with Choco Drizzle</option>
+                  <option value="Steamed Chicken Momos (8 pcs)">Steamed Chicken Momos (8 pcs)</option>
+                  <option value="Paneer tikka wrap">Paneer tikka wrap</option>
+                  <option value="Adrak Masala Chai & 2 Samosas">Adrak Masala Chai & 2 Samosas</option>
                 </select>
               </div>
 
@@ -371,7 +371,7 @@ export const StudentReviews: React.FC = () => {
               <div className="mb-2.5 inline-flex items-center gap-1.5 bg-[#f7f4eb] px-2.5 py-1 rounded-md border border-[#e2ead1] text-[11px] text-[#16342e]">
                 <span>{rev.dishEmoji}</span>
                 <strong className="truncate font-semibold">{rev.dishName}</strong>
-                <span className="text-[#8a9992]">· {rev.vendorName}</span>
+                <span className="text-[#8a9992]">· DGU Central Canteen</span>
               </div>
 
               {/* Comment */}

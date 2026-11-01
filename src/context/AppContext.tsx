@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { MealItem, PickupSlot, Order, OrderStatus, UserProfile } from '../types';
 import { STARTER_MEALS, STARTER_SLOTS, INITIAL_ORDERS, VENTURE_BLUEPRINT } from '../data/initialData';
+import {
+  calculateCanteenSchedule,
+  CanteenScheduleInfo,
+  ScheduleMode,
+  generateUpcomingSlots
+} from '../utils/canteenSchedule';
 
 interface CartItem {
   meal: MealItem;
@@ -17,6 +23,10 @@ interface AppContextType {
   selectedKitchen: string;
   selectedSlotId: string;
   latestPlacedOrder: Order | null;
+  isLoggedIn: boolean;
+  loginUser: (emailOrRoll: string, password?: string) => boolean;
+  registerUser: (userData: { name: string; rollNo: string; email: string; hostelBlock?: string; password?: string }) => void;
+  logoutUser: () => void;
   toastMessage: string | null;
   showToast: (msg: string) => void;
   setSelectedSlotId: (slotId: string) => void;
@@ -36,6 +46,8 @@ interface AppContextType {
   importBackup: (jsonData: any) => boolean;
   exportBackup: () => any;
   setLatestPlacedOrder: (order: Order | null) => void;
+  canteenSchedule: CanteenScheduleInfo;
+  setScheduleMode: (mode: ScheduleMode) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -64,58 +76,135 @@ function playChime() {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [meals, setMeals] = useState<MealItem[]>(() => {
-    const saved = localStorage.getItem('mm_meals_v5') || localStorage.getItem('mm_meals_v4');
+    // Purge older stale cache versions so broken URLs and legacy canteens are completely eliminated
+    [
+      'mm_meals', 'mm_meals_v1', 'mm_meals_v2', 'mm_meals_v3', 'mm_meals_v4',
+      'mm_meals_v5', 'mm_meals_v6', 'mm_meals_v7', 'mm_meals_v8', 'mm_meals_v9',
+      'mm_meals_v10', 'mm_meals_v11'
+    ].forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+
+    const saved = localStorage.getItem('mm_meals_v12');
     if (saved) {
       try {
         const parsed: MealItem[] = JSON.parse(saved);
-        // Ensure Chole Bhature always uses the authentic, realistic photo
+        const starterMap = new Map(STARTER_MEALS.map(m => [m.id, m]));
         return parsed.map((m) => {
-          if (m.id === '7' || m.name.toLowerCase().includes('chole bhature')) {
-            return {
-              ...m,
-              imageUrl: '/images/chole_bhature.jpg',
-              description: 'Authentic Amritsari spiced chickpeas curry served with two puffed golden bhaturas, pickled onions, and fresh lemon.'
-            };
-          }
-          return m;
+          const fresh = starterMap.get(m.id);
+          return fresh
+            ? {
+                ...m,
+                name: fresh.name,
+                imageUrl: fresh.imageUrl,
+                description: fresh.description,
+                tag: fresh.tag,
+                emoji: fresh.emoji,
+                vendorName: 'DGU Central Canteen'
+              }
+            : {
+                ...m,
+                vendorName: 'DGU Central Canteen'
+              };
         });
       } catch (e) {
-        return STARTER_MEALS;
+        return STARTER_MEALS.map(m => ({ ...m, vendorName: 'DGU Central Canteen' }));
       }
     }
-    return STARTER_MEALS;
+    return STARTER_MEALS.map(m => ({ ...m, vendorName: 'DGU Central Canteen' }));
   });
 
+  // Real-Time Canteen Operating Hours State (10:00 AM – 11:00 PM Everyday)
+  const [scheduleMode, setScheduleModeState] = useState<ScheduleMode>(() => {
+    try {
+      const saved = localStorage.getItem('mm_canteen_mode');
+      if (saved === 'simulate_open' || saved === 'simulate_closed') return saved;
+    } catch (e) {}
+    return 'realtime';
+  });
+
+  const [canteenSchedule, setCanteenSchedule] = useState<CanteenScheduleInfo>(() =>
+    calculateCanteenSchedule(new Date(), scheduleMode)
+  );
+
   const [slots, setSlots] = useState<PickupSlot[]>(() => {
-    const saved = localStorage.getItem('mm_slots');
-    return saved ? JSON.parse(saved) : STARTER_SLOTS;
+    // Purge outdated static slots cache
+    try {
+      localStorage.removeItem('mm_slots');
+      localStorage.removeItem('mm_slots_v2');
+    } catch (e) {}
+    return generateUpcomingSlots(new Date(), scheduleMode);
   });
 
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('mm_cart');
-    return saved ? JSON.parse(saved) : [];
+    try { localStorage.removeItem('mm_cart'); } catch (e) {}
+    const saved = localStorage.getItem('mm_cart_v2');
+    if (saved) {
+      try {
+        const parsed: CartItem[] = JSON.parse(saved);
+        return parsed.map(c => ({
+          ...c,
+          meal: { ...c.meal, vendorName: 'DGU Central Canteen' }
+        }));
+      } catch (e) {}
+    }
+    return [];
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('mm_orders');
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    // Purge legacy orders that might contain outdated canteen names
+    try { localStorage.removeItem('mm_orders'); } catch (e) {}
+    const saved = localStorage.getItem('mm_orders_v2');
+    if (saved) {
+      try {
+        const parsed: Order[] = JSON.parse(saved);
+        return parsed.map(o => ({
+          ...o,
+          vendorName: 'DGU Central Canteen',
+          items: (o.items || []).map(i => ({ ...i, vendorName: 'DGU Central Canteen' }))
+        }));
+      } catch (e) {}
+    }
+    return INITIAL_ORDERS.map(o => ({
+      ...o,
+      vendorName: 'DGU Central Canteen',
+      items: (o.items || []).map(i => ({ ...i, vendorName: 'DGU Central Canteen' }))
+    }));
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('mm_user');
-    return saved ? JSON.parse(saved) : {
-      uid: 'user-vikash-0251',
-      name: 'Vikash Kumar Gupta',
-      email: 'vikash.0251mba621@dgu.ac.in',
-      rollNo: '0251MBA621',
+    const saved = localStorage.getItem('mm_user_auth_v1');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          assignedVendor: 'DGU Central Canteen'
+        };
+      } catch (e) {
+        // Fall through
+      }
+    }
+    return {
+      uid: 'user-guest',
+      name: 'Guest Student',
+      email: 'student@dgu.ac.in',
+      rollNo: '',
       role: 'student',
-      savedOrdersCount: 2
+      savedOrdersCount: 0,
+      hostelBlock: 'Campus Hostels',
+      isLoggedIn: false
     };
   });
 
+  const isLoggedIn = !!currentUser.isLoggedIn;
+
   const [activeRole, setActiveRole] = useState<'student' | 'vendor' | 'quest'>('student');
-  const [selectedKitchen, setSelectedKitchen] = useState<string>('Green Leaf Canteen');
-  const [selectedSlotId, setSelectedSlotId] = useState<string>('12-40');
+  const [selectedKitchen, setSelectedKitchen] = useState<string>('DGU Central Canteen');
+  const [selectedSlotId, setSelectedSlotId] = useState<string>(() => {
+    const initialSlots = generateUpcomingSlots(new Date(), scheduleMode);
+    return initialSlots[0]?.id || 'slot-current';
+  });
   const [latestPlacedOrder, setLatestPlacedOrder] = useState<Order | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -126,26 +215,204 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 3200);
   }, []);
 
-  // Save changes to localStorage
+  const setScheduleMode = useCallback((mode: ScheduleMode) => {
+    setScheduleModeState(mode);
+    try {
+      localStorage.setItem('mm_canteen_mode', mode);
+    } catch (e) {}
+    const now = new Date();
+    const updated = calculateCanteenSchedule(now, mode);
+    setCanteenSchedule(updated);
+
+    const freshSlots = generateUpcomingSlots(now, mode);
+    setSlots(freshSlots);
+    if (freshSlots[0]) {
+      setSelectedSlotId(freshSlots[0].id);
+    }
+
+    if (mode === 'simulate_open') {
+      showToast('Simulation: DGU Central Canteen forced OPEN (10:00 AM – 11:00 PM)');
+    } else if (mode === 'simulate_closed') {
+      showToast('Simulation: DGU Central Canteen forced CLOSED (Opens 10:00 AM)');
+    } else {
+      showToast(`Real-Time Clock Active: Canteen is currently ${updated.isOpen ? 'OPEN' : 'CLOSED'}`);
+    }
+  }, [showToast]);
+
+  // Dynamic real-time schedule & slot ticker:
+  // Automatically calculates upcoming windows as actual real time rolls forward
   useEffect(() => {
-    localStorage.setItem('mm_meals_v5', JSON.stringify(meals));
+    const updateScheduleAndSlots = () => {
+      const now = new Date();
+      setCanteenSchedule(calculateCanteenSchedule(now, scheduleMode));
+
+      const freshSlots = generateUpcomingSlots(now, scheduleMode);
+      setSlots(prevSlots => {
+        // If immediate next slot moved (e.g. from 4:45-5:00 to 5:00-5:15), update slots
+        if (!prevSlots.length || prevSlots[0]?.id !== freshSlots[0]?.id || prevSlots[0]?.label !== freshSlots[0]?.label) {
+          return freshSlots;
+        }
+        return prevSlots;
+      });
+    };
+    updateScheduleAndSlots();
+    const interval = setInterval(updateScheduleAndSlots, 10000);
+    return () => clearInterval(interval);
+  }, [scheduleMode]);
+
+  // Keep selectedSlotId valid whenever slots update
+  useEffect(() => {
+    if (slots.length > 0 && !slots.some(s => s.id === selectedSlotId)) {
+      setSelectedSlotId(slots[0].id);
+    }
+  }, [slots, selectedSlotId]);
+
+  const loginUser = useCallback((identifier: string, password?: string): boolean => {
+    const trimmed = identifier.trim();
+    if (!trimmed) return false;
+    const isEmail = trimmed.includes('@');
+    const isPhone = /^[0-9+ -]{10,14}$/.test(trimmed);
+
+    let name = 'Vikash Kumar Gupta';
+    let rollNo = '0251MBA621';
+    let email = 'vikash.0251mba621@dgu.ac.in';
+
+    if (isEmail) {
+      email = trimmed.toLowerCase();
+      const prefix = trimmed.split('@')[0];
+      name = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+    } else if (isPhone) {
+      rollNo = '0251MBA621';
+      email = `student.${trimmed.slice(-4)}@dgu.ac.in`;
+      name = 'Vikash Kumar Gupta';
+    } else {
+      rollNo = trimmed.toUpperCase();
+      email = `${trimmed.toLowerCase()}@dgu.ac.in`;
+      name = trimmed.toUpperCase() === '0251MBA621' ? 'Vikash Kumar Gupta' : `Student (${trimmed.toUpperCase()})`;
+    }
+
+    const updated: UserProfile = {
+      uid: currentUser.uid && currentUser.uid !== 'user-guest' ? currentUser.uid : `user-${Date.now()}`,
+      name: currentUser.name && currentUser.name !== 'Guest Student' ? currentUser.name : name,
+      rollNo,
+      email,
+      role: 'student',
+      savedOrdersCount: Math.max(1, currentUser.savedOrdersCount || 1),
+      hostelBlock: currentUser.hostelBlock || 'Hostel Block B',
+      isLoggedIn: true
+    };
+    setCurrentUser(updated);
+    localStorage.setItem('mm_user_auth_v1', JSON.stringify(updated));
+    showToast(`Welcome back, ${updated.name.split(' ')[0]}!`);
+    return true;
+  }, [currentUser, showToast]);
+
+  const registerUser = useCallback((userData: {
+    name: string;
+    rollNo: string;
+    email: string;
+    hostelBlock?: string;
+    password?: string;
+  }) => {
+    const newUser: UserProfile = {
+      uid: `user-${Date.now()}`,
+      name: userData.name.trim(),
+      rollNo: userData.rollNo.trim().toUpperCase(),
+      email: userData.email.trim().toLowerCase(),
+      hostelBlock: userData.hostelBlock || 'Hostel Block B',
+      role: 'student',
+      savedOrdersCount: 0,
+      isLoggedIn: true
+    };
+    setCurrentUser(newUser);
+    localStorage.setItem('mm_user_auth_v1', JSON.stringify(newUser));
+    showToast(`Account created! Welcome to MealMate, ${newUser.name.split(' ')[0]}!`);
+  }, [showToast]);
+
+  const logoutUser = useCallback(() => {
+    const loggedOutUser: UserProfile = {
+      ...currentUser,
+      isLoggedIn: false
+    };
+    setCurrentUser(loggedOutUser);
+    localStorage.setItem('mm_user_auth_v1', JSON.stringify(loggedOutUser));
+    showToast('Signed out. See you next lunch break!');
+  }, [currentUser, showToast]);
+
+  // Save changes to localStorage with versioned keys
+  useEffect(() => {
+    localStorage.setItem('mm_meals_v12', JSON.stringify(meals));
   }, [meals]);
 
   useEffect(() => {
-    localStorage.setItem('mm_slots', JSON.stringify(slots));
+    localStorage.setItem('mm_slots_v2', JSON.stringify(slots));
   }, [slots]);
 
   useEffect(() => {
-    localStorage.setItem('mm_cart', JSON.stringify(cart));
+    localStorage.setItem('mm_cart_v2', JSON.stringify(cart));
   }, [cart]);
 
   useEffect(() => {
-    localStorage.setItem('mm_orders', JSON.stringify(orders));
+    localStorage.setItem('mm_orders_v2', JSON.stringify(orders));
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem('mm_user', JSON.stringify(currentUser));
+    localStorage.setItem('mm_user_auth_v1', JSON.stringify(currentUser));
   }, [currentUser]);
+
+  // Real-Time Kitchen Order Lifecycle Engine:
+  // Automatically advances active orders in real time (Accepted -> Preparing -> Ready)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setOrders(prevOrders => {
+        let hasChanges = false;
+        const now = Date.now();
+        const updated = prevOrders.map(order => {
+          // If Accepted and placed >= 14s ago -> advance to Preparing
+          if (order.status === 'Accepted') {
+            const ageSec = (now - new Date(order.createdAt).getTime()) / 1000;
+            if (ageSec >= 14) {
+              hasChanges = true;
+              showToast(`🔥 Central Kitchen is now cooking Order #${order.token}!`);
+              return {
+                ...order,
+                status: 'Preparing' as OrderStatus,
+                updatedAt: new Date().toISOString()
+              };
+            }
+          }
+          // If Preparing and updated >= 22s ago -> advance to Ready
+          if (order.status === 'Preparing') {
+            const ageSec = (now - new Date(order.updatedAt || order.createdAt).getTime()) / 1000;
+            if (ageSec >= 22) {
+              hasChanges = true;
+              playChime();
+              showToast(`🟢 Order #${order.token} is READY FOR PICKUP at DGU Central Canteen Counter!`);
+              return {
+                ...order,
+                status: 'Ready' as OrderStatus,
+                updatedAt: new Date().toISOString(),
+                readyAt: new Date().toISOString()
+              };
+            }
+          }
+          return order;
+        });
+
+        if (hasChanges) {
+          try {
+            const channel = new BroadcastChannel('mealmate_sync_channel');
+            channel.postMessage({ type: 'SYNC_ALL', payload: { orders: updated } });
+            channel.close();
+          } catch (e) {}
+          return updated;
+        }
+        return prevOrders;
+      });
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, [showToast]);
 
   // Cross-tab synchronization via BroadcastChannel
   useEffect(() => {
@@ -253,7 +520,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const total = cart.reduce((sum, item) => sum + (item.meal.price * item.quantity), 0);
-    const primaryVendor = cart[0].meal.vendorName;
     const tokenNum = Math.floor(10000 + Math.random() * 90000);
     const token = `MM-${tokenNum}`;
     const orderId = `ord-${Date.now().toString(36)}-${tokenNum}`;
@@ -270,13 +536,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: c.meal.name,
         price: c.meal.price,
         emoji: c.meal.emoji,
-        vendorName: c.meal.vendorName,
+        vendorName: 'DGU Central Canteen',
         quantity: c.quantity
       })),
       total,
       slotId: slot.id,
       slotLabel: slot.label,
-      vendorName: primaryVendor,
+      vendorName: 'DGU Central Canteen',
       status: 'Accepted',
       paymentStatus: 'Pay at pickup',
       specialInstructions: instructions?.trim() || undefined,
@@ -401,7 +667,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Added "${newMeal.name}" to ${newMeal.vendorName} menu!`);
   };
 
-  const switchUserRole = (role: 'student' | 'vendor' | 'quest', vendorName = 'Green Leaf Canteen') => {
+  const switchUserRole = (role: 'student' | 'vendor' | 'quest', vendorName = 'DGU Central Canteen') => {
     setActiveRole(role);
     if (role === 'student') {
       setCurrentUser({
@@ -492,6 +758,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cart,
         orders,
         currentUser,
+        isLoggedIn,
+        loginUser,
+        registerUser,
+        logoutUser,
         activeRole,
         selectedKitchen,
         selectedSlotId,
@@ -514,7 +784,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAllData,
         importBackup,
         exportBackup,
-        setLatestPlacedOrder
+        setLatestPlacedOrder,
+        canteenSchedule,
+        setScheduleMode
       }}
     >
       {children}

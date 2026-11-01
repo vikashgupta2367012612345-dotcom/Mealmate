@@ -150,11 +150,19 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
                     </span>
                     <span className="text-xs text-[#64736d] flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-[#126b55]" />
-                      <strong className="text-[#16342e]">{order.vendorName}</strong>
+                      <strong className="text-[#16342e]">DGU Central Canteen</strong>
                     </span>
                   </div>
 
-                  <div>{getStatusBadge(order.status)}</div>
+                  <div className="flex items-center gap-2">
+                    {order.status !== 'Picked up' && order.status !== 'Cancelled' && (
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-[#126b55] bg-[#e2ead1] px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#126b55] animate-ping" />
+                        Live Real-Time
+                      </span>
+                    )}
+                    {getStatusBadge(order.status)}
+                  </div>
                 </div>
 
                 {/* Items & Slot */}
@@ -174,15 +182,15 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
                 </div>
 
                 {/* Status Guidance / Action */}
-                <div className="flex items-center justify-between pt-1 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                   {order.status === 'Ready' ? (
                     <div className="text-[#166534] font-bold flex items-center gap-1.5 bg-[#dcfce7] px-2.5 py-1 rounded">
                       <QrCode className="w-4 h-4" />
-                      <span>Ready for collection! Head to {order.vendorName} counter now.</span>
+                      <span>Ready for collection! Head to DGU Central Canteen counter now.</span>
                     </div>
                   ) : order.status === 'Preparing' ? (
-                    <span className="text-[#9a3412] text-xs">
-                      Kitchen is packing your food. Ready in approx ~3–5 mins.
+                    <span className="text-[#9a3412] text-xs font-medium flex items-center gap-1">
+                      <span>🔥 Kitchen is cooking fresh portion. Ready in approx ~2–4 mins.</span>
                     </span>
                   ) : order.status === 'Picked up' ? (
                     <span className="text-[#64736d] text-xs">
@@ -194,13 +202,43 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
                     </span>
                   )}
 
-                  <button
-                    onClick={() => onRepeatOrder(order)}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#126b55] hover:text-[#0b4c3b] hover:underline ml-auto"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Re-order</span>
-                  </button>
+                  <div className="flex items-center gap-2 ml-auto">
+                    {/* Live Real-time stage controls for evaluator / counter */}
+                    {order.status === 'Accepted' && (
+                      <button
+                        onClick={() => updateOrderStatus(order.id, 'Preparing')}
+                        className="px-2.5 py-1 bg-[#ffedd5] text-[#9a3412] border border-[#fed7aa] rounded text-[11px] font-bold hover:bg-[#fed7aa] cursor-pointer"
+                        title="Real-time kitchen simulation"
+                      >
+                        ⚡ Cook Now
+                      </button>
+                    )}
+                    {order.status === 'Preparing' && (
+                      <button
+                        onClick={() => updateOrderStatus(order.id, 'Ready')}
+                        className="px-2.5 py-1 bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] rounded text-[11px] font-bold hover:bg-[#bbf7d0] cursor-pointer"
+                        title="Real-time ready status"
+                      >
+                        🟢 Mark Ready
+                      </button>
+                    )}
+                    {order.status === 'Ready' && (
+                      <button
+                        onClick={() => updateOrderStatus(order.id, 'Picked up')}
+                        className="px-2.5 py-1 bg-[#126b55] text-white rounded text-[11px] font-bold hover:bg-[#0b4c3b] cursor-pointer"
+                      >
+                        ✓ Mark Collected
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => onRepeatOrder(order)}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#126b55] hover:text-[#0b4c3b] hover:underline"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Re-order</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
