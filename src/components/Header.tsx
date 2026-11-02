@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ShoppingBag, Clock, User, LogOut, ChevronDown, Sparkles } from 'lucide-react';
+import { ShoppingBag, Clock, User, LogOut, ChevronDown, Sparkles, TrendingUp, ReceiptText } from 'lucide-react';
 
 interface HeaderProps {
   onOpenCart: () => void;
-  onOpenOrders: () => void;
+  onOpenOrders: (tab?: 'active' | 'past' | 'all') => void;
   onOpenAuth: () => void;
 }
 
@@ -165,14 +165,20 @@ export const Header: React.FC<HeaderProps> = ({
           </a>
         </nav>
 
-        {/* My Orders Button */}
+        {/* My Orders / Order History Button */}
         <button
-          onClick={onOpenOrders}
-          className="relative flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-[#16342e] bg-[#f7f4eb] hover:bg-[#eae6d8] rounded-full border border-[#d9ded5] transition-colors"
-          title="View active pre-orders"
+          onClick={() => onOpenOrders(activeOrdersCount > 0 ? 'active' : 'past')}
+          className="relative flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-[#16342e] bg-[#f7f4eb] hover:bg-[#eae6d8] rounded-full border border-[#d9ded5] transition-colors cursor-pointer"
+          title="View active meals and past order history"
         >
-          <Clock className="w-3.5 h-3.5 text-[#126b55]" />
-          <span className="hidden sm:inline">My Orders</span>
+          {activeOrdersCount > 0 ? (
+            <Clock className="w-3.5 h-3.5 text-[#126b55]" />
+          ) : (
+            <ReceiptText className="w-3.5 h-3.5 text-[#126b55]" />
+          )}
+          <span className="hidden sm:inline">
+            {activeOrdersCount > 0 ? 'My Orders' : 'Order History'}
+          </span>
           {activeOrdersCount > 0 && (
             <span className="w-4.5 h-4.5 rounded-full bg-[#126b55] text-[#d9f04a] text-[10px] font-bold flex items-center justify-center animate-pulse">
               {activeOrdersCount}
@@ -201,7 +207,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="fixed inset-0 z-40"
                   onClick={() => setIsProfileMenuOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[#e4e6df] p-3 z-50 text-xs text-[#16342e] space-y-2">
+                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-xl border border-[#e4e6df] p-3 z-50 text-xs text-[#16342e] space-y-2">
                   <div className="pb-2 border-b border-[#f0eee6]">
                     <div className="font-bold text-sm text-[#16342e] truncate">{currentUser.name}</div>
                     <div className="text-[11px] text-[#64736d]">{currentUser.rollNo || 'DGU Student'}</div>
@@ -211,12 +217,41 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => {
                       setIsProfileMenuOpen(false);
-                      onOpenOrders();
+                      onOpenOrders('active');
                     }}
-                    className="w-full text-left py-1.5 px-2 hover:bg-[#f7f4eb] rounded text-[#16342e] font-medium flex items-center gap-2"
+                    className="w-full text-left py-1.5 px-2 hover:bg-[#f7f4eb] rounded text-[#16342e] font-medium flex items-center justify-between cursor-pointer"
                   >
-                    <Clock className="w-3.5 h-3.5 text-[#126b55]" />
-                    <span>My Meal Reservations</span>
+                    <span className="flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-[#126b55]" />
+                      <span>Live Active Orders</span>
+                    </span>
+                    {activeOrdersCount > 0 && (
+                      <span className="text-[10px] font-bold bg-[#126b55] text-white px-1.5 py-0.2 rounded-full">
+                        {activeOrdersCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onOpenOrders('past');
+                    }}
+                    className="w-full text-left py-1.5 px-2 hover:bg-[#f7f4eb] rounded text-[#16342e] font-medium flex items-center gap-2 cursor-pointer"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5 text-[#126b55]" />
+                    <span>Order History & Spending</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onOpenOrders('all');
+                    }}
+                    className="w-full text-left py-1.5 px-2 hover:bg-[#f7f4eb] rounded text-[#16342e] font-medium flex items-center gap-2 cursor-pointer"
+                  >
+                    <ReceiptText className="w-3.5 h-3.5 text-[#126b55]" />
+                    <span>All Orders & Receipts</span>
                   </button>
 
                   <button
@@ -224,7 +259,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsProfileMenuOpen(false);
                       logoutUser();
                     }}
-                    className="w-full text-left py-1.5 px-2 hover:bg-rose-50 text-rose-700 rounded font-semibold flex items-center gap-2 pt-2 border-t border-[#f0eee6]"
+                    className="w-full text-left py-1.5 px-2 hover:bg-rose-50 text-rose-700 rounded font-semibold flex items-center gap-2 pt-2 border-t border-[#f0eee6] cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>

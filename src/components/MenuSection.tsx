@@ -16,13 +16,16 @@ import {
   Info
 } from 'lucide-react';
 
-const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
+const DEFAULT_FALLBACK_IMAGE = '/images/meals/north_indian_thali.jpg';
 
 export const MenuSection: React.FC = () => {
   const { meals, addToCart, cart, activeRole, restockMeal, canteenSchedule } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<MealCategory>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [budgetFilter, setBudgetFilter] = useState<'all' | 'under70' | 'under5min'>('all');
+  const [isPureVegOnly, setIsPureVegOnly] = useState<boolean>(false);
+  const [ratingFilter, setRatingFilter] = useState<boolean>(false);
+  const [quickSort, setQuickSort] = useState<'default' | 'rating' | 'price_low' | 'prep_time'>('default');
   const [selectedDish, setSelectedDish] = useState<MealItem | null>(null);
   const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null);
   const [hoveredInfoId, setHoveredInfoId] = useState<string | null>(null);
@@ -34,6 +37,16 @@ export const MenuSection: React.FC = () => {
   ].filter(Boolean) as MealItem[];
 
   const filteredMeals = meals.filter((meal) => {
+    // Pure Veg Zomato Filter
+    if (isPureVegOnly && meal.dietaryType !== 'veg') {
+      return false;
+    }
+
+    // Rating Filter 4.5+
+    if (ratingFilter && (meal.rating || 4.5) < 4.5) {
+      return false;
+    }
+
     // Category match
     if (selectedCategory !== 'all' && meal.type !== selectedCategory) {
       return false;
@@ -58,6 +71,13 @@ export const MenuSection: React.FC = () => {
     }
 
     return true;
+  });
+
+  const sortedMeals = [...filteredMeals].sort((a, b) => {
+    if (quickSort === 'rating') return (b.rating || 4.5) - (a.rating || 4.5);
+    if (quickSort === 'price_low') return a.price - b.price;
+    if (quickSort === 'prep_time') return (a.prepTimeMinutes || 5) - (b.prepTimeMinutes || 5);
+    return 0;
   });
 
   const getCartQuantity = (mealId: string) => {
@@ -429,12 +449,116 @@ export const MenuSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters Bar: Category Pills & Quick Speed/Budget Tags */}
-      <div className="space-y-3.5 mb-8">
+      {/* Filters Bar: Zomato Pure Veg Bar, Category Pills & Quick Filters */}
+      <div className="space-y-4 mb-8">
+        {/* Zomato Signature Pure Veg & Sorting Control Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#fffdf8] rounded-xl border border-[#e4e6df] shadow-2xs">
+          {/* Zomato Iconic Veg Switch */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsPureVegOnly(!isPureVegOnly)}
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer select-none ${
+                isPureVegOnly
+                  ? 'bg-[#16a34a]/10 border-[#16a34a] text-[#166534] shadow-xs'
+                  : 'bg-white border-[#d9ded5] text-[#4b6259] hover:border-[#16a34a]/50'
+              }`}
+            >
+              {/* Veg Green Box Symbol */}
+              <span className="w-4 h-4 border border-[#16a34a] flex items-center justify-center rounded-[2px] bg-white">
+                <span className="w-2 h-2 rounded-full bg-[#16a34a]" />
+              </span>
+              <span className="text-xs font-bold tracking-tight">Pure Veg</span>
+              {/* Pill Switch */}
+              <span
+                className={`w-8 h-4 rounded-full transition-colors relative flex items-center px-0.5 ${
+                  isPureVegOnly ? 'bg-[#16a34a]' : 'bg-[#d9ded5]'
+                }`}
+              >
+                <span
+                  className={`w-3 h-3 rounded-full bg-white transition-transform ${
+                    isPureVegOnly ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </button>
+
+            {/* Zomato Quick Filter Chips */}
+            <div className="flex items-center gap-2 overflow-x-auto text-xs">
+              <button
+                type="button"
+                onClick={() => setRatingFilter(!ratingFilter)}
+                className={`px-3 py-1.5 rounded-full border transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                  ratingFilter
+                    ? 'bg-[#16342e] text-[#d9f04a] font-bold border-[#16342e] shadow-xs'
+                    : 'bg-white text-[#64736d] border-[#d9ded5] hover:border-[#16342e]'
+                }`}
+              >
+                <Star className="w-3.5 h-3.5 fill-[#f59e0b] stroke-[#d97706]" />
+                <span>Rating 4.5+</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBudgetFilter(budgetFilter === 'under5min' ? 'all' : 'under5min')}
+                className={`px-3 py-1.5 rounded-full border transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                  budgetFilter === 'under5min'
+                    ? 'bg-[#16342e] text-[#d9f04a] font-bold border-[#16342e] shadow-xs'
+                    : 'bg-white text-[#64736d] border-[#d9ded5] hover:border-[#16342e]'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5 text-[#126b55]" />
+                <span>Fast Prep (≤5m)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBudgetFilter(budgetFilter === 'under70' ? 'all' : 'under70')}
+                className={`px-3 py-1.5 rounded-full border transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                  budgetFilter === 'under70'
+                    ? 'bg-[#16342e] text-[#d9f04a] font-bold border-[#16342e] shadow-xs'
+                    : 'bg-white text-[#64736d] border-[#d9ded5] hover:border-[#16342e]'
+                }`}
+              >
+                <span>💰 Under ₹70</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Sort Dropdown */}
+          <div className="flex items-center gap-2 ml-auto text-xs">
+            <span className="text-[#8a9992] hidden md:inline">Sort:</span>
+            <select
+              value={quickSort}
+              onChange={(e) => setQuickSort(e.target.value as any)}
+              className="px-3 py-1.5 bg-white border border-[#d9ded5] rounded-lg text-xs font-semibold text-[#16342e] focus:outline-none focus:border-[#126b55] cursor-pointer"
+            >
+              <option value="default">Relevance (Popular)</option>
+              <option value="rating">Top Rated ⭐</option>
+              <option value="price_low">Price: Low to High 🏷️</option>
+              <option value="prep_time">Fastest Prep ⏱️</option>
+            </select>
+            {(isPureVegOnly || ratingFilter || budgetFilter !== 'all' || searchQuery || selectedCategory !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPureVegOnly(false);
+                  setRatingFilter(false);
+                  setBudgetFilter('all');
+                  setSelectedCategory('all');
+                  setSearchQuery('');
+                }}
+                className="text-[11px] font-bold text-[#e11d48] hover:underline cursor-pointer px-1"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Category Filters */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          <span className="text-[#64736d] mr-1 hidden sm:inline">Menu:</span>
+          <span className="text-[#64736d] mr-1 hidden sm:inline">Category:</span>
           {[
             { id: 'all', label: 'All Dishes' },
             { id: 'veg', label: '🥦 Pure Veg & Homestyle' },
@@ -447,7 +571,7 @@ export const MenuSection: React.FC = () => {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id as MealCategory)}
-              className={`px-3 py-1.5 rounded-full border transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-full border transition-all whitespace-nowrap cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-[#16342e] text-[#d9f04a] font-bold border-[#16342e] shadow-xs'
                   : 'bg-[#fffdf8] text-[#64736d] border-[#d9ded5] hover:text-[#16342e] hover:border-[#b0b9ab]'
@@ -456,55 +580,32 @@ export const MenuSection: React.FC = () => {
               {cat.label}
             </button>
           ))}
-        </div>
-
-        {/* Speed / Budget Quick Toggles */}
-        <div className="flex items-center gap-2 overflow-x-auto text-[11px] font-medium text-[#64736d]">
-          <span>Filter:</span>
-          <button
-            onClick={() => setBudgetFilter(budgetFilter === 'under70' ? 'all' : 'under70')}
-            className={`px-2.5 py-1 rounded-md border transition-all ${
-              budgetFilter === 'under70'
-                ? 'bg-[#e2ead1] text-[#16342e] border-[#c2dc37] font-bold'
-                : 'bg-[#f7f4eb] border-[#d9ded5] hover:text-[#16342e]'
-            }`}
-          >
-            💰 Under ₹70 (Budget Picks)
-          </button>
-          <button
-            onClick={() => setBudgetFilter(budgetFilter === 'under5min' ? 'all' : 'under5min')}
-            className={`px-2.5 py-1 rounded-md border transition-all ${
-              budgetFilter === 'under5min'
-                ? 'bg-[#e2ead1] text-[#16342e] border-[#c2dc37] font-bold'
-                : 'bg-[#f7f4eb] border-[#d9ded5] hover:text-[#16342e]'
-            }`}
-          >
-            ⏱️ Fast Prep (≤5 mins)
-          </button>
-          <span className="ml-auto text-[11px] text-[#8a9992] hidden md:inline">
-            Showing {filteredMeals.length} dishes
+          <span className="ml-auto text-[11px] text-[#8a9992] hidden md:inline shrink-0">
+            Showing {sortedMeals.length} dishes
           </span>
         </div>
       </div>
 
       {/* Menu Grid */}
-      {filteredMeals.length === 0 ? (
+      {sortedMeals.length === 0 ? (
         <div className="bg-[#fffdf8] border border-dashed border-[#d9ded5] p-12 text-center rounded-lg">
           <p className="text-base text-[#64736d] mb-3">No campus dishes found matching your selection.</p>
           <button
             onClick={() => {
+              setIsPureVegOnly(false);
+              setRatingFilter(false);
               setSelectedCategory('all');
               setBudgetFilter('all');
               setSearchQuery('');
             }}
-            className="text-xs font-bold text-[#126b55] underline"
+            className="text-xs font-bold text-[#126b55] underline cursor-pointer"
           >
             Clear all filters
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMeals.map((meal) => {
+          {sortedMeals.map((meal) => {
             const inCartCount = getCartQuantity(meal.id);
             const isSoldOut = meal.available <= 0;
 

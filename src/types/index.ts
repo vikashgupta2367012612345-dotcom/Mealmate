@@ -55,6 +55,10 @@ export interface Order {
   vendorName: string;
   status: OrderStatus;
   paymentStatus: 'Pay at pickup' | 'Paid';
+  orderMode?: 'pickup' | 'delivery';
+  deliveryLocation?: string;
+  cutleryOptOut?: boolean;
+  deliveryPartnerName?: string;
   specialInstructions?: string;
   createdAt: string;
   updatedAt: string;

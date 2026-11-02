@@ -10,7 +10,10 @@ import {
   ChefHat,
   Sparkles,
   Zap,
-  Timer
+  Timer,
+  Bike,
+  ShoppingBag,
+  Leaf
 } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -39,11 +42,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     canteenSchedule
   } = useApp();
 
+  const [orderMode, setOrderMode] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryLocation, setDeliveryLocation] = useState<string>('DGU Hostel Block A (Boys)');
+  const [customLocationDetail, setCustomLocationDetail] = useState<string>('');
+  const [cutleryOptOut, setCutleryOptOut] = useState<boolean>(true);
   const [instructions, setInstructions] = useState('');
   const [studentName, setStudentName] = useState(currentUser.name);
   const [rollNo, setRollNo] = useState(currentUser.rollNo || '0251MBA621');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const quickInstructionOptions = [
+    '🌶️ Less Spicy',
+    '🥗 Extra Chutney',
+    '🔥 Smoking Hot',
+    '📦 Separate Box',
+    '🍋 Extra Lemon',
+    '🧂 No Onion/Garlic'
+  ];
+
+  const toggleInstruction = (chip: string) => {
+    if (instructions.includes(chip)) {
+      setInstructions(prev => prev.replace(chip, '').replace(/,\s*,/g, ',').trim());
+    } else {
+      setInstructions(prev => prev ? `${prev}, ${chip}` : chip);
+    }
+  };
 
   // 1. Kitchen Load & Queue Analysis
   const canteenName = 'DGU Central Canteen';
@@ -175,7 +199,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null);
     setSubmitting(true);
     try {
-      await placePreOrder(currentSelectedSlot.id, instructions);
+      const fullDeliveryLocation = orderMode === 'delivery'
+        ? `${deliveryLocation}${customLocationDetail.trim() ? ` · ${customLocationDetail.trim()}` : ''}`
+        : undefined;
+
+      await placePreOrder(currentSelectedSlot.id, {
+        instructions,
+        orderMode,
+        deliveryLocation: fullDeliveryLocation,
+        cutleryOptOut
+      });
       setSubmitting(false);
       onOrderPlaced();
     } catch (err: any) {
@@ -239,6 +272,74 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Zomato-style Delivery vs Pickup Mode Switcher */}
+          <div className="bg-[#f2efe6] p-1 rounded-xl flex items-center border border-[#d9ded5]">
+            <button
+              type="button"
+              onClick={() => setOrderMode('pickup')}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                orderMode === 'pickup'
+                  ? 'bg-[#16342e] text-[#d9f04a] shadow-xs'
+                  : 'text-[#64736d] hover:text-[#16342e]'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Counter Pickup (Free)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderMode('delivery')}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                orderMode === 'delivery'
+                  ? 'bg-[#16342e] text-[#d9f04a] shadow-xs'
+                  : 'text-[#64736d] hover:text-[#16342e]'
+              }`}
+            >
+              <Bike className="w-4 h-4" />
+              <span>🛵 Campus Drop</span>
+            </button>
+          </div>
+
+          {orderMode === 'delivery' && (
+            <div className="p-3.5 bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl text-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#065f46] flex items-center gap-1.5">
+                  <Bike className="w-4 h-4 text-[#10b981]" />
+                  <span>DGU Campus Delivery Point</span>
+                </span>
+                <span className="text-[10px] bg-[#10b981] text-white px-2 py-0.5 rounded-full font-bold">
+                  Campus Runner Active
+                </span>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-[#065f46] mb-1">
+                  Select Drop-Off Landmark:
+                </label>
+                <select
+                  value={deliveryLocation}
+                  onChange={(e) => setDeliveryLocation(e.target.value)}
+                  className="w-full p-2 bg-white border border-[#a7f3d0] rounded-md text-[#16342e] font-medium text-xs focus:outline-none"
+                >
+                  <option value="DGU Hostel Block A (Boys)">🏢 DGU Hostel Block A (Boys Hostel)</option>
+                  <option value="DGU Hostel Block B (Girls)">🏢 DGU Hostel Block B (Girls Hostel)</option>
+                  <option value="DGU Central Library Main Porch">📚 Central Library Main Porch</option>
+                  <option value="DGU MBA Department Lawn & Foyer">🌿 MBA Department Lawn & Foyer</option>
+                  <option value="DGU Tech Block 3 Innovation Hub">🔬 Tech Block 3 Innovation Hub</option>
+                  <option value="DGU Main Sports Ground Pavilion">⚽ Main Sports Ground Pavilion</option>
+                </select>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={customLocationDetail}
+                  onChange={(e) => setCustomLocationDetail(e.target.value)}
+                  placeholder="Specific room no., bench, or floor (e.g. Room 304, 3rd Floor)"
+                  className="w-full p-2 text-xs bg-white border border-[#a7f3d0] rounded-md text-[#16342e] focus:outline-none placeholder-[#86958e]"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Reservation Summary Card */}
           <div className="p-3.5 bg-[#f7f4eb] rounded-lg border border-[#d9ded5] space-y-2 text-xs">
             <div className="flex justify-between items-center text-[#16342e] font-semibold">
@@ -434,11 +535,36 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           </div>
 
-          {/* Cooking / Preparation instructions */}
-          <div>
-            <label className="block text-xs font-bold text-[#16342e] mb-1">
-              Dietary or Kitchen Note (Optional)
-            </label>
+          {/* Zomato Cooking Instructions Chips & Note */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-[#16342e]">
+                Cooking & Kitchen Instructions
+              </label>
+              <span className="text-[10px] text-[#8a9992]">Click chips to add</span>
+            </div>
+
+            {/* Quick Chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {quickInstructionOptions.map(chip => {
+                const isSelected = instructions.includes(chip);
+                return (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => toggleInstruction(chip)}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#16342e] text-[#d9f04a] font-bold border-[#16342e] shadow-2xs'
+                        : 'bg-white text-[#64736d] border-[#d9ded5] hover:border-[#126b55]'
+                    }`}
+                  >
+                    {chip}
+                  </button>
+                );
+              })}
+            </div>
+
             <input
               type="text"
               value={instructions}
@@ -448,14 +574,46 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             />
           </div>
 
+          {/* Zomato Eco-friendly Cutlery Opt-Out */}
+          <div className="p-3 bg-[#f0fdf4] rounded-lg border border-[#bbf7d0] flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              id="cutleryCheckbox"
+              checked={cutleryOptOut}
+              onChange={e => setCutleryOptOut(e.target.checked)}
+              className="mt-0.5 rounded text-[#16a34a] focus:ring-[#16a34a] cursor-pointer"
+            />
+            <label htmlFor="cutleryCheckbox" className="text-xs text-[#166534] cursor-pointer select-none">
+              <span className="font-bold flex items-center gap-1">
+                <Leaf className="w-3.5 h-3.5 text-[#16a34a]" />
+                Don't send plastic cutlery (Eco-Friendly)
+              </span>
+              <span className="block text-[11px] text-[#15803d] mt-0.5">
+                Helps reduce single-use plastic waste at DGU campus. Paper napkins are still included.
+              </span>
+            </label>
+          </div>
+
           {/* Payment Terms Notice */}
           <div className="p-3 bg-[#eef2ea] rounded-md border border-[#c9d6c2] text-[11px] text-[#425a50] space-y-1">
             <div className="font-bold text-[#16342e] flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-[#126b55]" />
-              <span>Campus Pre-Order Guarantee · Pay at Pickup</span>
+              <span>
+                {orderMode === 'delivery'
+                  ? 'Campus Drop Guarantee · Pay on Delivery'
+                  : 'Campus Pre-Order Guarantee · Pay at Pickup'}
+              </span>
             </div>
             <p className="leading-relaxed">
-              Your portion is sent directly to {canteenName} kitchen queue. Show your digital token pass (e.g. MM-48201) at the designated pickup counter during <strong>{currentSelectedSlot.label}</strong> and pay ₹{total} via UPI or cash.
+              {orderMode === 'delivery' ? (
+                <>
+                  Your meal will be prepared in the {canteenName} kitchen and brought directly to <strong>{deliveryLocation}</strong> by our campus runner. Pay ₹{total} via UPI or cash upon arrival!
+                </>
+              ) : (
+                <>
+                  Your portion is sent directly to {canteenName} kitchen queue. Show your digital token pass (e.g. MM-48201) at the designated pickup counter during <strong>{currentSelectedSlot.label}</strong> and pay ₹{total} via UPI or cash.
+                </>
+              )}
             </p>
           </div>
 
@@ -471,7 +629,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             ) : (
               <>
                 <CheckCircle className="w-4 h-4 text-[#d9f04a]" />
-                <span>Confirm Reservation for {currentSelectedSlot.label} · ₹{total}</span>
+                <span>
+                  {orderMode === 'delivery'
+                    ? `Order Campus Delivery to ${deliveryLocation.split(' ')[1] || 'Campus'} · ₹${total}`
+                    : `Confirm Pickup for ${currentSelectedSlot.label} · ₹${total}`}
+                </span>
               </>
             )}
           </button>

@@ -25,6 +25,7 @@ interface AppContextType {
   latestPlacedOrder: Order | null;
   isLoggedIn: boolean;
   loginUser: (emailOrRoll: string, password?: string) => { success: boolean; error?: string };
+  loginWithGoogle: (googleUser?: { name: string; email: string }) => { success: boolean; error?: string };
   registerUser: (userData: { name: string; email: string; phone?: string; rollNo?: string; hostelBlock?: string; password?: string }) => { success: boolean; error?: string };
   registeredAccounts: RegisteredAccount[];
   logoutUser: () => void;
@@ -37,7 +38,15 @@ interface AppContextType {
   removeFromCart: (mealId: string) => void;
   updateCartQuantity: (mealId: string, delta: number) => void;
   clearCart: () => void;
-  placePreOrder: (slotId: string, instructions?: string) => Promise<Order>;
+  placePreOrder: (
+    slotId: string,
+    instructionsOrOptions?: string | {
+      instructions?: string;
+      orderMode?: 'pickup' | 'delivery';
+      deliveryLocation?: string;
+      cutleryOptOut?: boolean;
+    }
+  ) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   restockMeal: (mealId: string, portions: number) => void;
   toggleMealAvailability: (mealId: string) => void;
@@ -77,16 +86,16 @@ function playChime() {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [meals, setMeals] = useState<MealItem[]>(() => {
-    // Purge older stale cache versions so broken URLs and legacy canteens are completely eliminated
+    // Purge older stale cache versions so broken URLs and legacy data are completely eliminated
     [
       'mm_meals', 'mm_meals_v1', 'mm_meals_v2', 'mm_meals_v3', 'mm_meals_v4',
       'mm_meals_v5', 'mm_meals_v6', 'mm_meals_v7', 'mm_meals_v8', 'mm_meals_v9',
-      'mm_meals_v10', 'mm_meals_v11'
+      'mm_meals_v10', 'mm_meals_v11', 'mm_meals_v12', 'mm_meals_v13', 'mm_meals_v14', 'mm_meals_v15'
     ].forEach(k => {
       try { localStorage.removeItem(k); } catch (e) {}
     });
 
-    const saved = localStorage.getItem('mm_meals_v12');
+    const saved = localStorage.getItem('mm_meals_v16');
     if (saved) {
       try {
         const parsed: MealItem[] = JSON.parse(saved);
@@ -101,6 +110,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 description: fresh.description,
                 tag: fresh.tag,
                 emoji: fresh.emoji,
+                dietaryType: fresh.dietaryType,
+                type: fresh.type,
+                calories: fresh.calories,
+                proteinGrams: fresh.proteinGrams,
+                allergens: fresh.allergens,
                 vendorName: 'DGU Central Canteen'
               }
             : {
@@ -159,14 +173,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed: Order[] = JSON.parse(saved);
-        return parsed.map(o => ({
-          ...o,
-          vendorName: 'DGU Central Canteen',
-          items: (o.items || []).map(i => ({ ...i, vendorName: 'DGU Central Canteen' }))
-        }));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(o => ({
+            ...o,
+            vendorName: 'DGU Central Canteen',
+            items: (o.items || []).map(i => ({ ...i, vendorName: 'DGU Central Canteen' }))
+          }));
+        }
       } catch (e) {}
     }
-    return [];
+    return INITIAL_ORDERS.map(o => ({
+      ...o,
+      vendorName: 'DGU Central Canteen',
+      items: (o.items || []).map(i => ({ ...i, vendorName: 'DGU Central Canteen' }))
+    }));
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
@@ -402,6 +422,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   }, [registeredAccounts, showToast]);
 
+  const loginWithGoogle = useCallback((googleUser?: { name: string; email: string }): { success: boolean; error?: string } => {
+    const rawEmail = googleUser?.email || 'vikashgupta2367012612345@gmail.com';
+    const cleanEmail = rawEmail.trim().toLowerCase();
+
+    let cleanName = googleUser?.name?.trim();
+    if (!cleanName) {
+      const prefix = cleanEmail.split('@')[0];
+      cleanName = prefix.charAt(0).toUpperCase() + prefix.slice(1).replace(/[0-9._]/g, ' ').trim();
+      if (!cleanName) cleanName = 'Google Student';
+    }
+
+    // Check if account already exists in registered accounts; if not, auto-register as Google user
+    const existing = registeredAccounts.find(acc => acc.email.toLowerCase() === cleanEmail);
+    if (!existing) {
+      const newAccount: RegisteredAccount = {
+        uid: `google-${Date.now()}`,
+        name: cleanName,
+        email: cleanEmail,
+        rollNo: '0251MBA621',
+        hostelBlock: 'Campus Hostels',
+        createdAt: new Date().toISOString()
+      };
+      setRegisteredAccounts(prev => [newAccount, ...prev]);
+    }
+
+    const newUserProfile: UserProfile = {
+      uid: existing ? existing.uid : `google-${Date.now()}`,
+      name: existing ? existing.name : cleanName,
+      email: cleanEmail,
+      phone: existing?.phone || undefined,
+      rollNo: existing?.rollNo || '0251MBA621',
+      hostelBlock: existing?.hostelBlock || 'Campus Hostels',
+      role: 'student',
+      savedOrdersCount: Math.max(1, currentUser.savedOrdersCount || 1),
+      isLoggedIn: true
+    };
+
+    setCurrentUser(newUserProfile);
+    try {
+      localStorage.setItem('mm_user_auth_v1', JSON.stringify(newUserProfile));
+    } catch (e) {}
+    showToast(`Signed in with Google as ${newUserProfile.name.split(' ')[0]}!`);
+    return { success: true };
+  }, [registeredAccounts, currentUser, showToast]);
+
   const logoutUser = useCallback(() => {
     const loggedOutUser: UserProfile = {
       ...currentUser,
@@ -414,7 +479,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Save changes to localStorage with versioned keys
   useEffect(() => {
-    localStorage.setItem('mm_meals_v12', JSON.stringify(meals));
+    localStorage.setItem('mm_meals_v16', JSON.stringify(meals));
   }, [meals]);
 
   useEffect(() => {
@@ -574,7 +639,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCart([]);
   };
 
-  const placePreOrder = async (slotId: string, instructions?: string): Promise<Order> => {
+  const placePreOrder = async (
+    slotId: string,
+    instructionsOrOptions?: string | {
+      instructions?: string;
+      orderMode?: 'pickup' | 'delivery';
+      deliveryLocation?: string;
+      cutleryOptOut?: boolean;
+    }
+  ): Promise<Order> => {
     if (cart.length === 0) {
       throw new Error('Your basket is empty.');
     }
@@ -591,6 +664,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error(`${item.meal.name} is no longer available in this quantity. Check live menu.`);
       }
     }
+
+    const options = typeof instructionsOrOptions === 'object' && instructionsOrOptions !== null
+      ? instructionsOrOptions
+      : { instructions: instructionsOrOptions as string };
 
     const total = cart.reduce((sum, item) => sum + (item.meal.price * item.quantity), 0);
     const tokenNum = Math.floor(10000 + Math.random() * 90000);
@@ -618,7 +695,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       vendorName: 'DGU Central Canteen',
       status: 'Accepted',
       paymentStatus: 'Pay at pickup',
-      specialInstructions: instructions?.trim() || undefined,
+      orderMode: options.orderMode || 'pickup',
+      deliveryLocation: options.deliveryLocation,
+      cutleryOptOut: options.cutleryOptOut ?? false,
+      deliveryPartnerName: options.orderMode === 'delivery' ? 'Ramesh (Campus Runner)' : undefined,
+      specialInstructions: options.instructions?.trim() || undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -773,9 +854,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders(INITIAL_ORDERS);
     setCart([]);
     localStorage.removeItem('mm_meals');
-    localStorage.removeItem('mm_meals_v3');
-    localStorage.removeItem('mm_meals_v4');
-    localStorage.removeItem('mm_meals_v5');
+    localStorage.removeItem('mm_meals_v13');
+    localStorage.removeItem('mm_meals_v14');
+    localStorage.removeItem('mm_meals_v15');
+    localStorage.removeItem('mm_meals_v16');
     localStorage.removeItem('mm_slots');
     localStorage.removeItem('mm_orders');
     localStorage.removeItem('mm_cart');
@@ -833,6 +915,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         isLoggedIn,
         loginUser,
+        loginWithGoogle,
         registerUser,
         registeredAccounts,
         logoutUser,

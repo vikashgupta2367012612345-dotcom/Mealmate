@@ -29,10 +29,16 @@ const AppContent: React.FC = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [ordersInitialTab, setOrdersInitialTab] = useState<'active' | 'past' | 'all'>('active');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const [discount, setDiscount] = useState(0);
   const [promoCode, setPromoCode] = useState('');
+
+  const handleOpenOrders = (tab: 'active' | 'past' | 'all' = 'active') => {
+    setOrdersInitialTab(tab);
+    setIsOrdersOpen(true);
+  };
 
   // Prompt Create Account / Login on initial visit if not logged in
   useEffect(() => {
@@ -116,7 +122,7 @@ const AppContent: React.FC = () => {
       {/* Main Header */}
       <Header
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenOrders={() => setIsOrdersOpen(true)}
+        onOpenOrders={handleOpenOrders}
         onOpenAuth={() => setIsAuthOpen(true)}
       />
 
@@ -150,13 +156,14 @@ const AppContent: React.FC = () => {
       <OrderConfirmationModal
         isOpen={isConfirmationOpen}
         onClose={() => setIsConfirmationOpen(false)}
-        onOpenMyOrders={() => setIsOrdersOpen(true)}
+        onOpenMyOrders={() => handleOpenOrders('active')}
       />
 
       <StudentOrdersModal
         isOpen={isOrdersOpen}
         onClose={() => setIsOrdersOpen(false)}
         onRepeatOrder={handleRepeatOrder}
+        initialTab={ordersInitialTab}
       />
 
       <AuthModal
@@ -164,7 +171,7 @@ const AppContent: React.FC = () => {
         onClose={() => setIsAuthOpen(false)}
       />
 
-      <LiveOrderTracker onOpenOrders={() => setIsOrdersOpen(true)} />
+      <LiveOrderTracker onOpenOrders={() => handleOpenOrders('active')} />
 
       <Toast />
     </div>

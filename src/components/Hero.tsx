@@ -7,7 +7,8 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ onQuickOrderRajma }) => {
-  const { slots, canteenSchedule } = useApp();
+  const { slots, canteenSchedule, meals } = useApp();
+  const rajmaMeal = meals.find((m) => m.id === '1');
   
   // Immediate real-time upcoming pickup window (dynamic based on current time)
   const activeSlot = slots[0] || {
@@ -139,12 +140,14 @@ export const Hero: React.FC<HeroProps> = ({ onQuickOrderRajma }) => {
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#e8dac5] border border-[#d9ded5] relative">
                   <img
-                    src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=200&q=80"
+                    src={rajmaMeal?.imageUrl || '/images/meals/rajma_rice_bowl.jpg'}
                     alt="Rajma rice bowl"
-                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
+                      const target = e.currentTarget;
+                      if (!target.src.endsWith('/images/meals/rajma_rice_bowl.jpg')) {
+                        target.src = '/images/meals/rajma_rice_bowl.jpg';
+                      }
                     }}
                   />
                   <span className="w-2.5 h-2.5 border border-[#16a34a] rounded-[1px] absolute top-1 left-1 bg-white flex items-center justify-center">

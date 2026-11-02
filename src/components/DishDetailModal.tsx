@@ -45,13 +45,13 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 const target = e.currentTarget;
                 if (target.getAttribute('data-fallback') !== 'true') {
                   target.setAttribute('data-fallback', 'true');
-                  target.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
+                  target.src = '/images/meals/north_indian_thali.jpg';
                 }
               }}
             />
           ) : (
             <img
-              src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80"
+              src="/images/meals/north_indian_thali.jpg"
               alt={meal.name}
               className="w-full h-full object-cover"
             />
