@@ -1,41 +1,46 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Fraunces", Georgia, serif;
-  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --color-ink: #16342e;
-  --color-forest: #126b55;
-  --color-forest-dark: #0b4c3b;
-  --color-lime: #d9f04a;
-  --color-lime-dark: #c2dc37;
-  --color-cream: #f7f4eb;
-  --color-paper: #fffdf8;
-  --color-line: #d9ded5;
-  --color-muted: #64736d;
+  --font-heading: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Appetite-Stimulating Food Psychology Palette: Red (hunger/craving) + Honey Saffron (savor/comfort) */
+  --color-primary-red: #E23744;
+  --color-primary-red-hover: #CB202D;
+  --color-accent-amber: #F59E0B;
+  --color-accent-amber-dark: #D97706;
+  --color-bg-canvas: #FFFDF9;
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-warm: #FAF6F0;
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #78716C;
+  --color-success: #16A34A;
+  --color-error: #DC2626;
+  --color-border-subtle: #F0EAE1;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #f7f4eb;
-  color: #16342e;
+  background-color: #FFFDF9;
+  color: #1C1917;
 }
 
-h1, h2, h3, .font-fraunces {
-  font-family: var(--font-serif);
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading);
 }
 
-/* Custom scrollbar */
+/* Custom food app scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f0ede3;
+  background: #FAF6F0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c5cec6;
-  border-radius: 3px;
+  background: #E5DDD0;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #126b55;
+  background: #E23744;
 }
+

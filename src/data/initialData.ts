@@ -1,4 +1,13 @@
-import { MealItem, PickupSlot, Order } from '../types';
+import {
+  MealItem,
+  PickupSlot,
+  Order,
+  CampusVendor,
+  PromotionalCoupon,
+  SmartMealCombo,
+  StudentReview,
+  StudentComplaint
+} from '../types';
 
 export const STARTER_MEALS: MealItem[] = [
   // --- DGU CENTRAL CANTEEN MENU ---
@@ -643,8 +652,10 @@ export const INITIAL_ORDERS: Order[] = [
     slotId: '12-40',
     slotLabel: '12:40 – 12:50 PM',
     vendorName: 'DGU Central Canteen',
-    status: 'Ready',
-    paymentStatus: 'Pay at pickup',
+    status: 'Ready for Pickup',
+    paymentMethod: 'UPI',
+    paymentStatus: 'Paid',
+    transactionId: 'UPI-98421098271',
     specialInstructions: 'Extra green chutney please',
     createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
@@ -666,7 +677,9 @@ export const INITIAL_ORDERS: Order[] = [
     slotLabel: '12:40 – 12:50 PM',
     vendorName: 'DGU Central Canteen',
     status: 'Preparing',
-    paymentStatus: 'Pay at pickup',
+    paymentMethod: 'UPI',
+    paymentStatus: 'Paid',
+    transactionId: 'UPI-77182901923',
     createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString()
   },
@@ -685,7 +698,8 @@ export const INITIAL_ORDERS: Order[] = [
     slotId: '12-30',
     slotLabel: '12:30 – 12:40 PM',
     vendorName: 'DGU Central Canteen',
-    status: 'Accepted',
+    status: 'Order Accepted',
+    paymentMethod: 'Cash on Pickup',
     paymentStatus: 'Pay at pickup',
     createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString()
@@ -704,13 +718,232 @@ export const INITIAL_ORDERS: Order[] = [
     slotId: '12-30',
     slotLabel: '12:30 – 12:40 PM',
     vendorName: 'DGU Central Canteen',
-    status: 'Picked up',
-    paymentStatus: 'Pay at pickup',
+    status: 'Collected',
+    paymentMethod: 'UPI',
+    paymentStatus: 'Paid',
+    transactionId: 'UPI-44910283712',
     createdAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
     pickedUpAt: new Date(Date.now() - 12 * 60 * 1000).toISOString()
   }
 ];
+
+export const CAMPUS_VENDORS: CampusVendor[] = [
+  {
+    id: 'vendor-1',
+    name: 'DGU Central Canteen',
+    tagline: 'Main campus dining hall — fresh homestyle meals, thalis & quick bites',
+    location: 'Student Activity Centre (Ground Floor)',
+    operatingHours: '10:00 AM – 11:00 PM Everyday',
+    rating: 4.9,
+    reviewCount: 1420,
+    cuisine: 'North Indian, Thalis, Indo-Chinese, Fast Food',
+    isActive: true,
+    isOpen: true,
+    imageUrl: '/images/meals/north_indian_thali.jpg',
+    accentColor: '#174D36',
+    avgPrepMinutes: 6,
+    totalOrdersServed: 8430
+  },
+  {
+    id: 'vendor-2',
+    name: 'Nescafe Campus Kiosk',
+    tagline: 'Artisan espresso, thick frappes, hot Maggi bowls & sweet treats',
+    location: 'Academic Block B Courtyard',
+    operatingHours: '8:30 AM – 9:30 PM (Mon–Sat)',
+    rating: 4.8,
+    reviewCount: 890,
+    cuisine: 'Coffee, Beverages, Maggi & Quick Snacks',
+    isActive: true,
+    isOpen: true,
+    imageUrl: '/images/meals/cold_coffee.jpg',
+    accentColor: '#F3A64A',
+    avgPrepMinutes: 4,
+    totalOrdersServed: 5210
+  },
+  {
+    id: 'vendor-3',
+    name: 'Campus Bakery & Cafe',
+    tagline: 'Freshly baked multigrain sandwiches, patties, grilled wraps & shakes',
+    location: 'Central Library Arcade',
+    operatingHours: '9:00 AM – 10:00 PM Everyday',
+    rating: 4.7,
+    reviewCount: 630,
+    cuisine: 'Artisan Bakery, Grilled Sandwiches, Shakes',
+    isActive: true,
+    isOpen: true,
+    imageUrl: '/images/meals/chicken_sandwich.jpg',
+    accentColor: '#75A879',
+    avgPrepMinutes: 5,
+    totalOrdersServed: 3940
+  },
+  {
+    id: 'vendor-4',
+    name: 'DGU Night Canteen & Rolls',
+    tagline: 'Late night kathi rolls, egg bhurji pav & midnight study fuel',
+    location: 'Hostel Block C (Basement Food Hub)',
+    operatingHours: '7:00 PM – 2:30 AM Everyday',
+    rating: 4.9,
+    reviewCount: 1120,
+    cuisine: 'Kolkata Kathi Rolls, Egg Dishes, Midnight Bites',
+    isActive: true,
+    isOpen: true,
+    imageUrl: '/images/meals/egg_chicken_roll.jpg',
+    accentColor: '#252D28',
+    avgPrepMinutes: 7,
+    totalOrdersServed: 6810
+  }
+];
+
+export const PROMOTIONAL_COUPONS: PromotionalCoupon[] = [
+  {
+    code: 'MEALMATE50',
+    discountPercent: 50,
+    maxDiscount: 50,
+    minOrder: 99,
+    description: '50% off up to ₹50 on campus pre-orders above ₹99',
+    isActive: true,
+    usageCount: 412
+  },
+  {
+    code: 'DGUFIRST',
+    discountPercent: 30,
+    maxDiscount: 35,
+    minOrder: 80,
+    description: 'Flat ₹30 off on your first campus food pre-order',
+    isActive: true,
+    usageCount: 928
+  },
+  {
+    code: 'EXAMBOOST',
+    discountPercent: 20,
+    maxDiscount: 40,
+    minOrder: 120,
+    description: '20% off up to ₹40 on evening snacks & beverages',
+    isActive: true,
+    usageCount: 247
+  },
+  {
+    code: 'HOSTELNIGHT',
+    discountPercent: 15,
+    maxDiscount: 30,
+    minOrder: 110,
+    description: 'Late night special: 15% discount on night canteen orders',
+    isActive: true,
+    usageCount: 310
+  }
+];
+
+export const SMART_COMBOS: SmartMealCombo[] = [
+  {
+    id: 'combo-1',
+    title: 'Hostel Morning Rush',
+    tagline: 'Warm buttered Bun Maska paired with freshly brewed Adrak Cutting Chai',
+    mealIds: ['24', '20'],
+    originalPrice: 95,
+    comboPrice: 75,
+    savings: 20,
+    badge: 'POPULAR BREAKFAST',
+    timing: 'breakfast'
+  },
+  {
+    id: 'combo-2',
+    title: 'Executive Canteen Power Lunch',
+    tagline: 'Dal Makhani & Jeera Rice bowl with chilled sweet-and-salt Nimbu Soda',
+    mealIds: ['13', '29'],
+    originalPrice: 130,
+    comboPrice: 110,
+    savings: 20,
+    badge: 'SAVE ₹20',
+    timing: 'lunch'
+  },
+  {
+    id: 'combo-3',
+    title: 'Evening Study Crunch Combo',
+    tagline: '2 Golden Samosas, Peri-Peri Loaded Fries & Frosty Choco Cold Coffee',
+    mealIds: ['20', '21', '6'],
+    originalPrice: 175,
+    comboPrice: 150,
+    savings: 25,
+    badge: 'STUDY FUEL',
+    timing: 'snacks'
+  },
+  {
+    id: 'combo-4',
+    title: 'High Protein Gym Bro Meal',
+    tagline: 'Double Egg Chicken Kathi Roll with Steamed Chicken Dumpling Momos',
+    mealIds: ['22', '15'],
+    originalPrice: 185,
+    comboPrice: 160,
+    savings: 25,
+    badge: '50G PROTEIN',
+    timing: 'dinner'
+  }
+];
+
+export const STUDENT_REVIEWS: StudentReview[] = [
+  {
+    id: 'rev-1',
+    studentName: 'Tanya Sengupta',
+    course: 'MBA Semester 2 · Roll 0251MBA119',
+    rating: 5,
+    comment: 'The 7-minute pickup guarantee is a lifesaver between back-to-back lectures! I order my Rajma Chawal while walking from Block A, and my hot meal is ready exactly as I arrive.',
+    dishName: 'Rajma rice bowl',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    createdAt: '2 days ago',
+    verifiedStudent: true
+  },
+  {
+    id: 'rev-2',
+    studentName: 'Aryan Kapoor',
+    course: 'B.Tech CSE Year 3 · Roll 0231BTECH042',
+    rating: 5,
+    comment: 'Never standing in the 20-minute canteen lunch queue again. The UPI payment works seamlessly and the digital pickup token pass makes counter collection instantaneous.',
+    dishName: 'Steamed Chicken Momos',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    createdAt: 'Yesterday',
+    verifiedStudent: true
+  },
+  {
+    id: 'rev-3',
+    studentName: 'Shreya Rawat',
+    course: 'BBA Semester 4 · Roll 0241BBA075',
+    rating: 5,
+    comment: 'The food photography matches 100% with what they hand you at the counter. The North Indian Thali is authentic, piping hot, and great value on a student budget.',
+    dishName: 'Deluxe Student North Indian Thali',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80',
+    createdAt: '3 days ago',
+    verifiedStudent: true
+  }
+];
+
+export const INITIAL_COMPLAINTS: StudentComplaint[] = [
+  {
+    id: 'comp-1',
+    orderToken: 'MM-31049',
+    studentName: 'Devansh Joshi',
+    studentEmail: 'devansh.j@dgu.ac.in',
+    vendorName: 'DGU Central Canteen',
+    subject: 'Requested extra mint chutney was missing in kathi roll parcel',
+    message: 'Added special instruction for extra mint chutney with my Chicken Kathi Roll but the package only had ketchup packets.',
+    status: 'Resolved',
+    createdAt: 'Yesterday, 1:45 PM',
+    resolutionNote: 'Credited ₹15 MealMate wallet voucher to student and alerted counter parcel staff.'
+  },
+  {
+    id: 'comp-2',
+    orderToken: 'MM-48210',
+    studentName: 'Mehak Gill',
+    studentEmail: 'mehak.g@dgu.ac.in',
+    vendorName: 'Nescafe Campus Kiosk',
+    subject: '1:15 PM slot ran out of spots quickly during lunch rush',
+    message: 'The 1:15 PM slot was filled up 20 minutes before class ended.',
+    status: 'Investigating',
+    createdAt: 'Today, 11:20 AM',
+    resolutionNote: 'Coordinating with Nescafe manager to expand slot batch capacity from 8 to 12 slots for peak hour.'
+  }
+];
+
 
 export const VENTURE_BLUEPRINT = {
   studentName: 'Vikash Kumar Gupta',

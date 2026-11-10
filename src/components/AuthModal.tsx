@@ -28,13 +28,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   defaultTab
 }) => {
-  const { loginUser, loginWithGoogle, registerUser, registeredAccounts } = useApp();
+  const { loginUser, loginWithGoogle, rememberedCredentials, registerUser, registeredAccounts } = useApp();
 
   // If no real accounts registered yet, automatically present "Create Account"
   const [activeTab, setActiveTab] = useState<'login' | 'create'>(() => {
     if (defaultTab) return defaultTab;
     return registeredAccounts.length === 0 ? 'create' : 'login';
   });
+
+  const [rememberMe, setRememberMe] = useState(() => Boolean(rememberedCredentials));
 
   useEffect(() => {
     if (defaultTab) {
@@ -45,7 +47,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   }, [defaultTab, registeredAccounts.length]);
 
   // Login Form State
-  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState(() => rememberedCredentials?.email || '');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
@@ -73,26 +75,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setErrorMessage(null);
     setIsGoogleSubmitting(true);
-    setTimeout(() => {
-      // Direct Google Login with authenticated Google profile
-      const res = loginWithGoogle({
-        email: 'vikashgupta2367012612345@gmail.com',
-        name: 'Vikash Kumar Gupta'
-      });
-      setIsGoogleSubmitting(false);
-
+    try {
+      const res = await loginWithGoogle(
+        rememberedCredentials ? { email: rememberedCredentials.email } : undefined,
+        rememberMe
+      );
       if (res.success) {
         onClose();
       } else {
         setErrorMessage(res.error || 'Google login failed. Please try again.');
       }
-    }, 300);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Google login failed. Please try again.');
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -110,19 +113,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const res = loginUser(cleanId, cleanPass);
-      setIsSubmitting(false);
-
+    try {
+      const res = await loginUser(cleanId, cleanPass, rememberMe);
       if (res.success) {
         onClose();
       } else {
         setErrorMessage(res.error || 'Authentication failed. Please verify your credentials.');
       }
-    }, 200);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Login failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -154,8 +159,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const res = registerUser({
+    try {
+      const res = await registerUser({
         name: cleanName,
         email: cleanEmail,
         phone: cleanPhone || undefined,
@@ -163,14 +168,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         hostelBlock: regHostel,
         password: cleanPass
       });
-      setIsSubmitting(false);
 
       if (res.success) {
         onClose();
       } else {
         setErrorMessage(res.error || 'Registration failed. Please check the provided details.');
       }
-    }, 200);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -322,6 +330,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
+            {/* Remember Credentials Checkbox */}
+            <div className="p-2.5 rounded-lg bg-[#f4f3ee] border border-[#e4e6df]">
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="mt-0.5 w-3.5 h-3.5 rounded text-[#126b55] border-[#d9ded5] focus:ring-[#126b55] accent-[#126b55] cursor-pointer"
+                />
+                <span className="text-[11px] text-[#252D28] leading-tight">
+                  Remember credentials on this device
+                </span>
+              </label>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -395,7 +418,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={regPhone}
                     onChange={e => setRegPhone(e.target.value)}
-                    placeholder="9876543210"
+                    placeholder="Enter mobile number"
                     className="w-full pl-8 pr-2.5 py-2 text-xs bg-white border border-[#d9ded5] rounded-lg text-[#16342e] focus:outline-none focus:border-[#126b55] transition-colors"
                   />
                 </div>

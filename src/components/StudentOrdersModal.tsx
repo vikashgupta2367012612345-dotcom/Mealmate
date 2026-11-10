@@ -19,7 +19,9 @@ import {
   ArrowRight,
   PieChart,
   Bike,
-  Leaf
+  Leaf,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 
 interface StudentOrdersModalProps {
@@ -35,9 +37,16 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
   onRepeatOrder,
   initialTab
 }) => {
-  const { orders, currentUser, updateOrderStatus } = useApp();
+  const { orders, currentUser, updateOrderStatus, cancelOrder } = useApp();
   const [activeTab, setActiveTab] = useState<'active' | 'past' | 'all'>(initialTab || 'active');
   const [spendingPeriod, setSpendingPeriod] = useState<'all' | '30days' | '7days'>('all');
+
+  // Order Cancellation Dialog State
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [selectedCancelReason, setSelectedCancelReason] = useState<string>('Change of plans');
+  const [customCancelReason, setCustomCancelReason] = useState<string>('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   // Comprehensive, case-insensitive order matching for student
   const studentOrders = useMemo(() => {
@@ -165,39 +174,79 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
     return studentOrders;
   }, [activeTab, activeOrders, completedOrders, studentOrders]);
 
+  const handleConfirmCancel = async () => {
+    if (!orderToCancel) return;
+    setIsCancelling(true);
+    setCancelError(null);
+    try {
+      const reason = selectedCancelReason === 'Other' && customCancelReason.trim()
+        ? customCancelReason.trim()
+        : selectedCancelReason;
+      const res = await cancelOrder(orderToCancel.id, reason);
+      if (res.success) {
+        setOrderToCancel(null);
+        setCustomCancelReason('');
+      } else {
+        setCancelError(res.error || 'Could not cancel order.');
+      }
+    } catch (e: any) {
+      setCancelError(e?.message || 'Error cancelling order.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
+      case 'Order Placed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFFDF9] text-[#B45309] border border-[#FDE68A]">
+            <Clock className="w-3 h-3 text-[#D97706]" />
+            <span>1. Placed</span>
+          </span>
+        );
+      case 'Order Accepted':
       case 'Accepted':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#fef3c7] text-[#92400e] border border-[#fde68a]">
-            <Clock className="w-3 h-3" />
-            <span>1. Accepted</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D]">
+            <Clock className="w-3 h-3 text-[#D97706]" />
+            <span>2. Queued</span>
           </span>
         );
       case 'Preparing':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ffedd5] text-[#9a3412] border border-[#fed7aa] animate-pulse">
-            <span>🔥 2. Cooking</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFEDD5] text-[#C2410C] border border-[#FDBA74] animate-pulse">
+            <span>🔥 3. Sizzling on Stove</span>
           </span>
         );
+      case 'Ready for Pickup':
       case 'Ready':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] ring-2 ring-[#22c55e]/20">
-            <span>🟢 3. Ready at Counter</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#15803D] text-white border border-[#15803D] shadow-xs animate-pulse">
+            <span>🟢 4. Ready at Counter!</span>
           </span>
         );
+      case 'Collected':
       case 'Picked up':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#10b981]" />
-            <span>Collected & Completed</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#15803D]" />
+            <span>5. Collected</span>
+          </span>
+        );
+      case 'Completed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#1C1917] text-white border border-[#1C1917]">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#F59E0B]" />
+            <span>6. Completed</span>
           </span>
         );
       case 'Cancelled':
+      default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#fee2e2] text-[#991b1b]">
-            <AlertCircle className="w-3 h-3" />
-            <span>Cancelled</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5]">
+            <XCircle className="w-3 h-3" />
+            <span>Cancelled & Refunded</span>
           </span>
         );
     }
@@ -588,13 +637,18 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
                         })}
                       </span>
                     </span>
+                  ) : order.status === 'Cancelled' ? (
+                    <span className="text-xs text-[#DC2626] font-semibold flex items-center gap-1 bg-[#FEE2E2] px-2.5 py-1 rounded-md">
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>Order Cancelled · Refund of ₹{order.total} credited</span>
+                    </span>
                   ) : (
                     <span className="text-[#92400e] text-xs">
                       Order accepted by kitchen. Scheduled for {order.slotLabel}.
                     </span>
                   )}
 
-                  <div className="flex items-center gap-2 ml-auto">
+                  <div className="flex flex-wrap items-center gap-2 ml-auto">
                     {/* Live simulation controls */}
                     {order.status === 'Accepted' && (
                       <button
@@ -617,16 +671,38 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
                     {order.status === 'Ready' && (
                       <button
                         onClick={() => updateOrderStatus(order.id, 'Picked up')}
-                        className="px-2.5 py-1 bg-[#126b55] text-white rounded-md text-[11px] font-bold hover:bg-[#0b4c3b] cursor-pointer shadow-xs"
+                        className="px-2.5 py-1 bg-[#15803D] text-white rounded-md text-[11px] font-bold hover:bg-[#166534] cursor-pointer shadow-xs"
                       >
                         ✓ Mark Collected
                       </button>
                     )}
 
+                    {/* Order Cancellation Option */}
+                    {order.status !== 'Picked up' &&
+                      order.status !== 'Collected' &&
+                      order.status !== 'Completed' &&
+                      order.status !== 'Cancelled' &&
+                      order.status !== 'Ready' &&
+                      order.status !== 'Ready for Pickup' && (
+                        <button
+                          onClick={() => {
+                            setOrderToCancel(order);
+                            setSelectedCancelReason('Change of plans');
+                            setCustomCancelReason('');
+                            setCancelError(null);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-rose-50 text-[#DC2626] rounded-md text-xs font-bold border border-[#FCA5A5] transition-colors cursor-pointer shadow-2xs"
+                          title="Cancel this order and receive 100% refund"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Cancel Order</span>
+                        </button>
+                      )}
+
                     {/* Re-order Button */}
                     <button
                       onClick={() => onRepeatOrder(order)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-[#eae6d8] text-[#126b55] rounded-md text-xs font-bold border border-[#d9ded5] transition-colors cursor-pointer shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-[#FAF6F0] text-[#E23744] rounded-md text-xs font-bold border border-[#F0EAE1] transition-colors cursor-pointer shadow-2xs hover:border-[#E23744]"
                       title="Re-order these same items"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -638,6 +714,113 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
             ))
           )}
         </div>
+
+        {/* Cancellation Confirmation Modal */}
+        {orderToCancel && (
+          <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-[#FFFDF9] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[#F0EAE1] space-y-4 animate-in zoom-in-95 duration-150">
+              <div className="flex items-start justify-between pb-3 border-b border-[#F0EAE1]">
+                <div className="flex items-center gap-2.5 text-[#DC2626]">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-[#DC2626]" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-bold text-base text-[#1C1917]">
+                      Cancel Order #{orderToCancel.token}?
+                    </h3>
+                    <p className="text-xs text-[#78716C]">
+                      100% full refund of ₹{orderToCancel.total} will be initiated.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={() => setOrderToCancel(null)}
+                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {cancelError && (
+                <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200">
+                  {cancelError}
+                </div>
+              )}
+
+              <div className="space-y-2 text-xs">
+                <span className="font-bold text-[#1C1917] block">Select cancellation reason:</span>
+                {[
+                  'Change of plans / Not hungry right now',
+                  'Selected wrong food item or portion',
+                  'Class schedule conflict / Need different slot',
+                  'Placed order by mistake',
+                  'Kitchen wait time too long'
+                ].map((reason) => (
+                  <label
+                    key={reason}
+                    className="flex items-center gap-2 p-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F5EFE6] border border-[#F0EAE1] cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="cancel_reason"
+                      checked={selectedCancelReason === reason}
+                      onChange={() => setSelectedCancelReason(reason)}
+                      className="accent-[#E23744] cursor-pointer"
+                    />
+                    <span className="text-[#1C1917] font-medium">{reason}</span>
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 p-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F5EFE6] border border-[#F0EAE1] cursor-pointer">
+                  <input
+                    type="radio"
+                    name="cancel_reason"
+                    checked={selectedCancelReason === 'Other'}
+                    onChange={() => setSelectedCancelReason('Other')}
+                    className="accent-[#E23744] cursor-pointer"
+                  />
+                  <span className="text-[#1C1917] font-medium">Other reason</span>
+                </label>
+                {selectedCancelReason === 'Other' && (
+                  <input
+                    type="text"
+                    value={customCancelReason}
+                    onChange={(e) => setCustomCancelReason(e.target.value)}
+                    placeholder="Enter reason..."
+                    className="w-full p-2.5 bg-white border border-[#F0EAE1] rounded-xl text-xs focus:outline-none focus:border-[#E23744]"
+                  />
+                )}
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Food inventory will be restocked immediately. Your refund of ₹{orderToCancel.total} will be processed via your payment method ({orderToCancel.paymentMethod}).
+                </span>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={() => setOrderToCancel(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 font-bold text-xs cursor-pointer"
+                >
+                  Keep My Order
+                </button>
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={handleConfirmCancel}
+                  className="flex-1 py-2.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-xs shadow-md transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {isCancelling ? 'Processing...' : 'Confirm Cancellation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper authentication functions
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        getUserRole() == 'admin' ||
+        request.auth.token.email == 'director.hospitality@dgu.ac.in'
+      );
+    }
+
+    function isVendor() {
+      return isAuthenticated() && (
+        getUserRole() == 'vendor' ||
+        isAdmin()
+      );
+    }
+
+    // 1. User Profiles: Isolated per user; only self or admin can access
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 2. Orders: Students see only their own orders; Vendors see kitchen orders; Admin sees all
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isVendor()
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isVendor()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 3. Products / Meal Catalog: Public read; write by authorized vendors & admins
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isVendor();
+    }
+
+    // 4. Vendors: Public read; write by admins
+    match /vendors/{vendorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 5. Pickup Slots: Read public; capacity reservation by authenticated users
+    match /pickupSlots/{slotId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // 6. Promotional Coupons: Read public; manage by admin
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 7. Student Grievances & Complaints: Own ticket access or admin resolution
+    match /complaints/{complaintId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.studentEmail == request.auth.token.email ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // 8. Reviews: Read public; create by authenticated students
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
