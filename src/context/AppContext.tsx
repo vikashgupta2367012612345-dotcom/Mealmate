@@ -318,22 +318,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // In-memory cart for current session only (no shared persistence across sessions)
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // User-isolated orders: If user explicitly ticked 'remember', restore their isolated orders!
+  // Realistic orders: Only orders actually placed by the user (no fake pre-populated orders)
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
-      const isRemembered = localStorage.getItem('mm_remember_credentials') === 'true';
-      if (isRemembered) {
-        const savedUser = localStorage.getItem('mm_remembered_user');
-        if (savedUser) {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && parsed.uid) {
-            if (parsed.role === 'admin') return INITIAL_ORDERS;
-            if (parsed.role === 'vendor') {
-              const vendorTarget = parsed.assignedVendor || 'DGU Central Canteen';
-              return INITIAL_ORDERS.filter(o => o.vendorName === vendorTarget);
-            }
-            return INITIAL_ORDERS.map(o => ({ ...o, userId: parsed.uid }));
-          }
+      // Clean up legacy mock order caches
+      ['mm_orders', 'mm_orders_v2', 'mm_user_auth_orders'].forEach(k => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+
+      const saved = localStorage.getItem('mm_real_orders_v1');
+      if (saved) {
+        const parsed: Order[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Exclude any mock demo orders
+          return parsed.filter(o => o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103');
         }
       }
     } catch (e) {}
@@ -533,32 +531,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let firebaseEmail: string = cleanIdentifier;
       let displayName: string = '';
 
-      // Authenticate via Firebase Auth using configured persistence (inMemory vs browserLocal)
+      // Authenticate strictly with Firebase Auth
       try {
         const userCred = await firebaseSignIn(cleanIdentifier, cleanPassword, rememberMe);
         firebaseUid = userCred.user.uid;
         firebaseEmail = userCred.user.email || cleanIdentifier;
         displayName = userCred.user.displayName || '';
       } catch (authErr: any) {
-        console.warn('Firebase signIn notice:', authErr?.code || authErr?.message);
-        // If signIn threw (e.g. invalid-credential, user-not-found, or credentials mismatch),
-        // try auto-registration or assign deterministic student session
-        try {
-          const newCred = await firebaseSignUp(cleanIdentifier, cleanPassword, undefined, rememberMe);
-          firebaseUid = newCred.user.uid;
-          firebaseEmail = newCred.user.email || cleanIdentifier;
-          displayName = newCred.user.displayName || '';
-        } catch (signupErr: any) {
-          console.warn('Firebase signUp fallback notice:', signupErr?.code || signupErr?.message);
-          // If the account already exists in Firebase or signup failed,
-          // establish deterministic student UID so student is never blocked from food menu!
-          firebaseUid = `usr_${cleanIdentifier.replace(/[^a-z0-9]/g, '_')}`;
-          firebaseEmail = cleanIdentifier;
+        const code = authErr?.code || '';
+        const msg = authErr?.message || '';
+        console.warn('Firebase signIn notice:', code, msg);
+
+        // Check if user has an account registered in local registeredAccounts:
+        const localMatch = registeredAccounts.find(a => a.email.toLowerCase() === cleanIdentifier);
+
+        // If the password was incorrect or invalid credentials:
+        if (
+          code === 'auth/wrong-password' ||
+          code === 'auth/invalid-credential' ||
+          msg.includes('INVALID_LOGIN_CREDENTIALS') ||
+          msg.includes('wrong-password')
+        ) {
+          // If a local registered record exists with a password and it doesn't match cleanPassword, reject!
+          if (localMatch && localMatch.password && localMatch.password !== cleanPassword) {
+            return {
+              success: false,
+              error: 'Incorrect password. Please enter the valid password you registered with.'
+            };
+          }
+          // If local record exists and password matches, authenticate
+          if (localMatch && localMatch.password === cleanPassword) {
+            firebaseUid = localMatch.uid;
+            displayName = localMatch.name;
+          } else {
+            return {
+              success: false,
+              error: 'Incorrect password. Please enter your valid account password or use "Forgot password?".'
+            };
+          }
+        } else if (code === 'auth/user-not-found' || msg.includes('user-not-found')) {
+          if (localMatch && localMatch.password === cleanPassword) {
+            firebaseUid = localMatch.uid;
+            displayName = localMatch.name;
+          } else {
+            return {
+              success: false,
+              error: 'No account found with this email. Please click "New Account" to register.'
+            };
+          }
+        } else if (code === 'auth/too-many-requests') {
+          return {
+            success: false,
+            error: 'Too many failed login attempts. Please wait a moment or reset your password.'
+          };
+        } else if (code === 'auth/invalid-email') {
+          return {
+            success: false,
+            error: 'Invalid email address format. Please enter a valid email address.'
+          };
+        } else {
+          // Any other error from Firebase: fail securely unless local credentials match
+          if (localMatch && localMatch.password === cleanPassword) {
+            firebaseUid = localMatch.uid;
+            displayName = localMatch.name;
+          } else {
+            return {
+              success: false,
+              error: 'Authentication failed. Please verify your email and password.'
+            };
+          }
         }
       }
 
       if (!firebaseUid) {
-        firebaseUid = `usr_${cleanIdentifier.replace(/[^a-z0-9]/g, '_')}`;
+        return {
+          success: false,
+          error: 'Authentication failed. Please verify your credentials.'
+        };
       }
 
       // Handle remember credentials preference
@@ -630,7 +679,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             isLoggedIn: true,
             favorites: ['1', '3', '7'],
             referralCode: 'VIKASH0251-MM',
-            savedOrdersCount: 2
+            savedOrdersCount: 0
           };
         } else {
           const cleanName = displayName || cleanIdentifier.split('@')[0].replace(/[._0-9]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).trim();
@@ -697,12 +746,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const vendorTarget = activeProfile.assignedVendor || 'DGU Central Canteen';
         setOrders(INITIAL_ORDERS.filter(o => o.vendorName === vendorTarget));
       } else {
-        // Student role: Load only orders matching this student
-        const isVikash = cleanIdentifier.includes('vikash') || activeProfile.email.includes('vikash') || activeProfile.rollNo === '0251MBA621';
-        if (isVikash) {
-          setOrders(INITIAL_ORDERS.map(o => ({ ...o, userId: activeProfile.uid || o.userId })));
-        } else {
-          setOrders([]); // Clean slate for other students: strictly isolated!
+        // Student role: Realistic orders only. Only orders actually placed by this student are loaded.
+        try {
+          const saved = localStorage.getItem('mm_real_orders_v1');
+          if (saved) {
+            const parsed: Order[] = JSON.parse(saved);
+            const userOrders = Array.isArray(parsed)
+              ? parsed.filter(o => o.userId === activeProfile.uid && o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103')
+              : [];
+            setOrders(userOrders);
+          } else {
+            setOrders([]);
+          }
+        } catch (e) {
+          setOrders([]);
         }
       }
 
@@ -771,6 +828,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.warn('Firestore setDoc new user notice:', e);
         }
       }
+
+      // Record registered account credentials for strict password verification
+      const newAcc: RegisteredAccount = {
+        uid,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone || undefined,
+        rollNo: cleanRollNo || undefined,
+        hostelBlock: userData.hostelBlock || 'Campus Hostels',
+        password: cleanPassword,
+        createdAt: new Date().toISOString(),
+        role
+      };
+      setRegisteredAccounts(prev => [...prev.filter(a => a.email !== cleanEmail), newAcc]);
 
       // Set state in memory only:
       setCurrentUser(newProfile);
@@ -904,11 +975,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       let email = googleUser?.email;
       let name = googleUser?.name;
-      const pass = googleUser?.password || 'Student@123';
+      const pass = googleUser?.password;
       let firebaseUid: string | null = null;
 
-      // 1. Try real Firebase GoogleAuthProvider popup sign-in if no explicit email passed
-      if (!email) {
+      // 1. Try real Firebase GoogleAuthProvider popup sign-in if no explicit email & password passed
+      if (!email && !pass) {
         try {
           const cred = await firebaseGoogleSignIn(rememberMe);
           if (cred?.user) {
@@ -920,7 +991,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.warn('Firebase Google popup notice:', popupErr);
           return {
             success: false,
-            error: 'Google Sign-In popup could not open. Please enter your Google email and password directly.'
+            error: 'Google Sign-In popup could not open. Please enter your registered Google email and password.'
           };
         }
       }
@@ -935,18 +1006,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const cleanEmail = email.trim().toLowerCase();
       const cleanName = name?.trim() || cleanEmail.split('@')[0].replace(/[._0-9]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).trim() || 'Google Student';
 
+      // 2. If password was provided, strictly verify it via Firebase Auth
       if (!firebaseUid) {
+        if (!pass) {
+          return {
+            success: false,
+            error: 'Please enter your account password.'
+          };
+        }
+
         try {
           const userCred = await firebaseSignIn(cleanEmail, pass, rememberMe);
           firebaseUid = userCred.user.uid;
-        } catch (e: any) {
-          try {
-            const newCred = await firebaseSignUp(cleanEmail, pass, cleanName, rememberMe);
-            firebaseUid = newCred.user.uid;
-          } catch (err: any) {
-            console.warn('Firebase Google signUp fallback notice:', err?.code || err?.message);
-            // Even if email already exists or auth threw, proceed with the student's Google identity
-            firebaseUid = `google-${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
+        } catch (authErr: any) {
+          const code = authErr?.code || '';
+          const msg = authErr?.message || '';
+          console.warn('Firebase Google verification notice:', code, msg);
+
+          // Check if user has an account registered in local registeredAccounts:
+          const localMatch = registeredAccounts.find(a => a.email.toLowerCase() === cleanEmail);
+
+          if (
+            code === 'auth/wrong-password' ||
+            code === 'auth/invalid-credential' ||
+            msg.includes('INVALID_LOGIN_CREDENTIALS') ||
+            msg.includes('wrong-password')
+          ) {
+            // Strictly reject wrong password!
+            if (localMatch && localMatch.password === pass) {
+              firebaseUid = localMatch.uid;
+            } else {
+              return {
+                success: false,
+                error: 'Incorrect password for this email. Please enter your valid password.'
+              };
+            }
+          } else if (code === 'auth/user-not-found' || msg.includes('user-not-found')) {
+            if (localMatch && localMatch.password === pass) {
+              firebaseUid = localMatch.uid;
+            } else {
+              return {
+                success: false,
+                error: 'No account registered with this email. Please click "New Account" to register.'
+              };
+            }
+          } else {
+            if (localMatch && localMatch.password === pass) {
+              firebaseUid = localMatch.uid;
+            } else {
+              return {
+                success: false,
+                error: 'Authentication failed. Please verify your email and password.'
+              };
+            }
           }
         }
       }
@@ -1028,7 +1140,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveRole(profile.role || 'student');
       setFavorites(profile.favorites || []);
       setCart([]);
-      setOrders(INITIAL_ORDERS.map(o => ({ ...o, userId: firebaseUid! })));
+      
+      // Load only realistic orders placed by this student (no fake pre-populated orders)
+      try {
+        const saved = localStorage.getItem('mm_real_orders_v1');
+        if (saved) {
+          const parsed: Order[] = JSON.parse(saved);
+          const userOrders = Array.isArray(parsed)
+            ? parsed.filter(o => o.userId === firebaseUid && o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103')
+            : [];
+          setOrders(userOrders);
+        } else {
+          setOrders([]);
+        }
+      } catch (e) {
+        setOrders([]);
+      }
       showToast(`Signed in with Google as ${cleanName.split(' ')[0]}!`);
       return { success: true };
     } catch (err: any) {
@@ -1081,6 +1208,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     try { localStorage.setItem('mm_slots_v2', JSON.stringify(slots)); } catch (e) {}
   }, [slots]);
+
+  // Persist only real student orders (strictly excluding any mock demo orders)
+  useEffect(() => {
+    try {
+      const realOrders = orders.filter(o => o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103');
+      localStorage.setItem('mm_real_orders_v1', JSON.stringify(realOrders));
+    } catch (e) {}
+  }, [orders]);
 
   // Real-Time Kitchen Order Lifecycle Engine:
   // Automatically advances active orders in real time (Accepted -> Preparing -> Ready)

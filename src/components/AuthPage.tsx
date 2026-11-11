@@ -32,7 +32,8 @@ import {
   UtensilsCrossed,
   Flame,
   Star,
-  MapPin
+  MapPin,
+  Copy
 } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
@@ -103,6 +104,7 @@ export const AuthPage: React.FC = () => {
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [domainCopied, setDomainCopied] = useState(false);
 
   // Resend OTP countdown ticker
   useEffect(() => {
@@ -577,19 +579,19 @@ export const AuthPage: React.FC = () => {
               {/* Header Titles */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-1">
-                  <UtensilsCrossed className="w-5 h-5 text-[#174D36]" />
-                  <span className="text-xs font-bold text-[#75A879] uppercase tracking-wider">
+                  <UtensilsCrossed className="w-5 h-5 text-[#E23744]" />
+                  <span className="text-xs font-bold text-[#E23744] uppercase tracking-wider">
                     DBS Global University Dining
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-heading font-black text-[#252D28] tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-heading font-black text-[#1C1917] tracking-tight">
                   {activeTab === 'phone' && 'Sign in to order food'}
                   {activeTab === 'email' && 'Campus ID Sign In'}
                   {activeTab === 'signup' && 'Create your food pass'}
                   {activeTab === 'forgot' && 'Reset your password'}
                 </h1>
-                <p className="text-xs text-[#737B74] mt-1">
-                  {activeTab === 'phone' && 'Enter your 10-digit mobile number to receive a real SMS verification code.'}
+                <p className="text-xs text-[#78716C] mt-1">
+                  {activeTab === 'phone' && 'Enter your 10-digit mobile number to receive an SMS verification code.'}
                   {activeTab === 'email' && 'Sign in with your registered university email address.'}
                   {activeTab === 'signup' && 'Register your university profile to order meals with confirmed pickup slots.'}
                   {activeTab === 'forgot' && 'Enter your registered email to receive a password reset link.'}
@@ -654,9 +656,78 @@ export const AuthPage: React.FC = () => {
 
               {/* Status Alert Banners */}
               {errorMessage && (
-                <div className="p-3 mb-4 bg-rose-50 text-rose-700 rounded-2xl text-xs flex items-center gap-2 border border-rose-200 animate-in fade-in duration-150">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span className="font-medium">{errorMessage}</span>
+                <div className="mb-4 space-y-2">
+                  <div className="p-3.5 bg-rose-50 text-rose-800 rounded-2xl text-xs flex items-start gap-2.5 border border-rose-200 animate-in fade-in duration-150">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-bold block">Authentication Notice</span>
+                      <span className="font-normal block leading-relaxed">{errorMessage}</span>
+                    </div>
+                  </div>
+
+                  {/* Quick Helper Card for Firebase Setup (Authorized Domains & Test Numbers) */}
+                  {(errorMessage.includes('billing') || errorMessage.includes('authorized') || errorMessage.includes('domain')) && (
+                    <div className="p-4 bg-[#FFF8E9] border border-[#F59E0B]/40 rounded-2xl text-xs text-[#1C1917] space-y-3 shadow-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-[#F59E0B]/20">
+                        <span className="font-bold text-[#B45309] flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4" />
+                          Firebase Console Setup Instructions
+                        </span>
+                        <span className="text-[10px] bg-[#F59E0B]/20 text-[#B45309] px-2 py-0.5 rounded-md font-bold">
+                          100% Free
+                        </span>
+                      </div>
+
+                      {/* Step A: Add Domain */}
+                      <div className="space-y-1">
+                        <div className="font-bold text-[#1C1917]">1. In your Firebase "Add domain" modal:</div>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-white px-2.5 py-1.5 rounded-lg border border-[#E7E9E3] font-mono text-[11px] text-[#E23744] truncate select-all">
+                            {typeof window !== 'undefined' ? window.location.hostname : 'ais-dev-ar3cmqai5auhtweaefdoel-956251413796.asia-southeast1.run.app'}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const host = typeof window !== 'undefined' ? window.location.hostname : '';
+                              if (host && navigator.clipboard) {
+                                navigator.clipboard.writeText(host);
+                                setDomainCopied(true);
+                                setTimeout(() => setDomainCopied(false), 2500);
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-[#E23744] hover:bg-[#CB202D] text-white font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0 transition-all"
+                          >
+                            {domainCopied ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-[#FDE047]" />
+                                <span>Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copy Domain</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Step B: Add Test Phone Number */}
+                      <div className="space-y-1 pt-2 border-t border-[#F59E0B]/15">
+                        <div className="font-bold text-[#1C1917]">2. To enable OTP without billing:</div>
+                        <p className="text-[11px] text-[#78716C] leading-snug">
+                          In Firebase Console → <strong>Authentication</strong> → <strong>Sign-in method</strong> → <strong>Phone</strong> → <strong>Phone numbers for testing</strong>:
+                        </p>
+                        <div className="bg-white p-2 rounded-lg border border-[#E7E9E3] font-mono text-[11px] text-[#1C1917] space-y-0.5">
+                          <div>• Phone: <strong className="text-[#E23744]">+91 9506050449</strong></div>
+                          <div>• Test SMS Code: <strong className="text-[#E23744]">123456</strong></div>
+                        </div>
+                        <p className="text-[10px] text-[#78716C] italic">
+                          Click Save. You can then log in instantly with code 123456 at zero cost!
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

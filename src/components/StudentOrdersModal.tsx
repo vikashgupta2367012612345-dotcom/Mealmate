@@ -56,6 +56,9 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
     const userUid = currentUser.uid;
 
     const matched = orders.filter(o => {
+      // Exclude mock demo orders
+      if (o.id === 'ord-101' || o.id === 'ord-102' || o.id === 'ord-103') return false;
+
       // 1. Role is admin: can see all
       if (currentUser.role === 'admin') return true;
 
@@ -72,23 +75,15 @@ export const StudentOrdersModal: React.FC<StudentOrdersModalProps> = ({
         return true;
       }
 
-      // 5. Name match (e.g. "Vikash Kumar Gupta")
+      // 5. Name match
       if (userName && userName !== 'guest student' && o.customerName && o.customerName.trim().toLowerCase() === userName) {
-        return true;
-      }
-
-      // 6. Guest or local starter orders placed on this client
-      if (o.userId === 'user-guest' || o.userId === 'user-vikash') {
         return true;
       }
 
       return false;
     });
 
-    // If specific filter yielded orders, return them.
-    // If no order matched user's email/roll yet (e.g. newly signed-in on device),
-    // show orders on this device so the user NEVER sees a broken empty history!
-    return matched.length > 0 ? matched : orders;
+    return matched;
   }, [orders, currentUser]);
 
   const activeOrders = useMemo(() => {

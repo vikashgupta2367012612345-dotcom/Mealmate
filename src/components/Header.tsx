@@ -46,7 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   const activeOrdersCount = orders.filter(
-    o => o.status !== 'Picked up' && o.status !== 'Collected' && o.status !== 'Completed' && o.status !== 'Cancelled'
+    o => o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103' &&
+    o.status !== 'Picked up' && o.status !== 'Collected' && o.status !== 'Completed' && o.status !== 'Cancelled'
   ).length;
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);

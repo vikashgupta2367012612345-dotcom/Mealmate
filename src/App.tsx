@@ -55,7 +55,9 @@ const AppContent: React.FC = () => {
     setIsOrdersOpen(true);
   };
 
-  const readyOrders = orders.filter(o => o.status === 'Ready' || o.status === 'Ready for Pickup');
+  const readyOrders = orders.filter(
+    o => o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103' && (o.status === 'Ready' || o.status === 'Ready for Pickup')
+  );
 
   const handleQuickOrderRajma = () => {
     addToCart('1'); // Rajma rice bowl

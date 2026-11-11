@@ -27,9 +27,10 @@ export const LiveOrderTracker: React.FC<LiveOrderTrackerProps> = ({ onOpenOrders
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // Find the most recent active order
+  // Find the most recent active order placed by the user
   const activeOrder = orders.find(
-    o => o.status === 'Accepted' || o.status === 'Preparing' || o.status === 'Ready'
+    o => o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103' &&
+    (o.status === 'Accepted' || o.status === 'Preparing' || o.status === 'Ready' || o.status === 'Ready for Pickup')
   );
 
   useEffect(() => {
