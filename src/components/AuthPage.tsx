@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   createRecaptchaVerifier,
-  firebaseSendPhoneOtp
+  firebaseSendPhoneOtp,
+  configurePersistence
 } from '../firebase';
 import {
   GraduationCap,
@@ -23,7 +24,6 @@ import {
   Building2,
   Home,
   Loader2,
-  Lock,
   X,
   Info,
   Smartphone,
@@ -43,6 +43,8 @@ export const AuthPage: React.FC = () => {
     loginWithGoogle,
     rememberedCredentials,
     clearRememberedCredentials,
+    savedDeviceEmails,
+    removeSavedDeviceEmail,
     registerUser,
     forgotPassword,
     showToast
@@ -76,6 +78,11 @@ export const AuthPage: React.FC = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
+  // Device email suggestions dropdown state & refs
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+  const emailDropdownRef = useRef<HTMLDivElement | null>(null);
+  const loginPasswordRef = useRef<HTMLInputElement | null>(null);
+
   // Sign up inputs
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -91,20 +98,23 @@ export const AuthPage: React.FC = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
-  // Google Credential Prompt Modal state (Strictly empty, no autofill buttons)
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState('');
-  const [googlePassword, setGooglePassword] = useState('');
-  const [showGooglePassword, setShowGooglePassword] = useState(false);
-  const [googleModalRemember, setGoogleModalRemember] = useState(false);
-  const [googleModalError, setGoogleModalError] = useState<string | null>(null);
-
   // Loading & error states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [domainCopied, setDomainCopied] = useState(false);
+
+  // Close email suggestions dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emailDropdownRef.current && !emailDropdownRef.current.contains(e.target as Node)) {
+        setShowEmailSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Resend OTP countdown ticker
   useEffect(() => {
@@ -119,95 +129,70 @@ export const AuthPage: React.FC = () => {
 
   /**
    * Handle user clicking "Sign in with Google"
-   * If "Remember login credentials on this device" is ticked (or previously remembered):
-   * MealMate MUST NOT ask for email/password again — it authenticates automatically
-   * and navigates directly to the campus dining menu!
+   * - If the user previously signed in with Google on this device AND ticked "Remember login credentials",
+   *   restore their verified session automatically in 1 click without re-prompting.
+   * - Otherwise, launch real Firebase Google OAuth popup (select_account) so the user can choose
+   *   any Google/Gmail account signed into their current device!
    */
-  const handleGoogleSignInClick = async () => {
+  const handleGoogleSignInClick = async (forceAccountPicker = false) => {
     setErrorMessage(null);
     setSuccessMessage(null);
+    setIsGoogleSubmitting(true);
 
-    // If user has checked rememberMe OR has a remembered account:
-    // Log in automatically without asking for credentials!
-    if (rememberMe || Boolean(rememberedCredentials)) {
-      setIsGoogleSubmitting(true);
-      try {
-        const targetEmail =
-          rememberedCredentials?.email ||
-          (loginEmail && loginEmail.includes('@') ? loginEmail.trim() : 'vikashgupta2367012612345@gmail.com');
-        const targetName = targetEmail.includes('vikash') ? 'Vikash Kumar Gupta' : targetEmail.split('@')[0];
-        const res = await loginWithGoogle({ email: targetEmail, name: targetName }, true);
+    try {
+      if (
+        !forceAccountPicker &&
+        rememberMe &&
+        rememberedCredentials?.isGoogle &&
+        rememberedCredentials?.email
+      ) {
+        const res = await loginWithGoogle({ email: rememberedCredentials.email }, true);
         if (!res.success) {
           setErrorMessage(res.error || 'Google Sign-In failed. Please try again.');
         }
-      } catch (err: any) {
-        setErrorMessage(err?.message || 'Google Sign-In encountered an error.');
-      } finally {
-        setIsGoogleSubmitting(false);
-      }
-      return;
-    }
-
-    // Only if rememberMe is unchecked and no credentials exist: prompt for credentials
-    setGoogleEmail(loginEmail && loginEmail.includes('@') ? loginEmail : '');
-    setGooglePassword('');
-    setGoogleModalRemember(false);
-    setGoogleModalError(null);
-    setShowGoogleModal(true);
-  };
-
-  /**
-   * Submit Google credentials entered in the prompt dialog
-   */
-  const handleGooglePromptSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setGoogleModalError(null);
-
-    const cleanEmail = googleEmail.trim().toLowerCase();
-    const cleanPass = googlePassword.trim();
-
-    if (!cleanEmail) {
-      setGoogleModalError('Please enter your Google account email address.');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      setGoogleModalError('Please enter a valid Google email address.');
-      return;
-    }
-
-    if (!cleanPass) {
-      setGoogleModalError('Please enter your Google account password.');
-      return;
-    }
-
-    if (cleanPass.length < 6) {
-      setGoogleModalError('Password must be at least 6 characters.');
-      return;
-    }
-
-    setIsGoogleSubmitting(true);
-    try {
-      const res = await loginWithGoogle(
-        {
-          email: cleanEmail,
-          password: cleanPass,
-          name: cleanEmail.split('@')[0].replace(/[._0-9]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()).trim() || 'Google Student'
-        },
-        googleModalRemember
-      );
-
-      if (res.success) {
-        setShowGoogleModal(false);
       } else {
-        setGoogleModalError(res.error || 'Google authentication failed. Please verify credentials.');
+        const res = await loginWithGoogle(undefined, rememberMe);
+        if (!res.success) {
+          setErrorMessage(res.error || 'Google Sign-In failed. Please try again.');
+        }
       }
     } catch (err: any) {
-      setGoogleModalError(err?.message || 'Google authentication encountered an error.');
+      setErrorMessage(err?.message || 'Google Sign-In encountered an error.');
     } finally {
       setIsGoogleSubmitting(false);
     }
+  };
+
+  // Compute filtered device email suggestions + smart domain completions
+  const normalizedTypedEmail = loginEmail.trim().toLowerCase();
+  const matchingDeviceEmails = savedDeviceEmails.filter(
+    item => !normalizedTypedEmail || item.email.toLowerCase().includes(normalizedTypedEmail)
+  );
+  const domainCompletionSuggestions: string[] = (() => {
+    if (!normalizedTypedEmail || normalizedTypedEmail.includes(' ')) return [];
+    const commonDomains = ['gmail.com', 'dgu.ac.in'];
+    if (!normalizedTypedEmail.includes('@')) {
+      return commonDomains
+        .map(d => `${normalizedTypedEmail}@${d}`)
+        .filter(candidate => !savedDeviceEmails.some(s => s.email.toLowerCase() === candidate));
+    }
+    const [localPart, domainPart] = normalizedTypedEmail.split('@');
+    if (localPart && domainPart !== undefined) {
+      return commonDomains
+        .filter(d => d.startsWith(domainPart) && d !== domainPart)
+        .map(d => `${localPart}@${d}`)
+        .filter(candidate => !savedDeviceEmails.some(s => s.email.toLowerCase() === candidate));
+    }
+    return [];
+  })();
+
+  const handleSelectEmailSuggestion = (selectedEmail: string) => {
+    setLoginEmail(selectedEmail);
+    setShowEmailSuggestions(false);
+    setErrorMessage(null);
+    setTimeout(() => {
+      loginPasswordRef.current?.focus();
+    }, 30);
   };
 
   /**
@@ -412,7 +397,8 @@ export const AuthPage: React.FC = () => {
         hostelBlock: regHostel,
         role: regRole,
         password: regPassword,
-        assignedVendor: regRole === 'vendor' ? 'DGU Central Canteen' : undefined
+        assignedVendor: regRole === 'vendor' ? 'DGU Central Canteen' : undefined,
+        rememberMe
       });
 
       if (!res.success) {
@@ -659,9 +645,39 @@ export const AuthPage: React.FC = () => {
                 <div className="mb-4 space-y-2">
                   <div className="p-3.5 bg-rose-50 text-rose-800 rounded-2xl text-xs flex items-start gap-2.5 border border-rose-200 animate-in fade-in duration-150">
                     <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
-                    <div className="space-y-1">
-                      <span className="font-bold block">Authentication Notice</span>
-                      <span className="font-normal block leading-relaxed">{errorMessage}</span>
+                    <div className="space-y-2 flex-1">
+                      <div>
+                        <span className="font-bold block">Authentication Notice</span>
+                        <span className="font-normal block leading-relaxed">{errorMessage}</span>
+                      </div>
+
+                      {activeTab === 'email' && (errorMessage.includes('Incorrect password') || errorMessage.includes('No account')) && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForgotEmail(loginEmail);
+                              setActiveTab('forgot');
+                              setErrorMessage(null);
+                              setForgotSubmitted(false);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-white border border-rose-200 text-[#E23744] font-bold text-[11px] hover:bg-rose-100/60 transition-colors cursor-pointer"
+                          >
+                            Reset Password
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRegEmail(loginEmail);
+                              setActiveTab('signup');
+                              setErrorMessage(null);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#E23744] text-white font-bold text-[11px] hover:bg-[#CB202D] transition-colors cursor-pointer"
+                          >
+                            Create New Account{loginEmail ? ` (${loginEmail.split('@')[0]})` : ''}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -777,6 +793,7 @@ export const AuthPage: React.FC = () => {
                             onChange={(e) => {
                               const val = e.target.checked;
                               setRememberMe(val);
+                              configurePersistence(val);
                               try {
                                 if (val) {
                                   localStorage.setItem('mm_remember_credentials', 'true');
@@ -795,7 +812,7 @@ export const AuthPage: React.FC = () => {
                             <span className="text-[11px] text-[#78716C] block leading-snug">
                               {rememberMe
                                 ? 'Session stays saved across browser refreshes on this device.'
-                                : 'Session resets on reload. Google Sign-In will prompt for credentials every time.'}
+                                : 'Session resets on reload. Google Sign-In will show your device accounts.'}
                             </span>
                           </div>
                         </label>
@@ -932,31 +949,172 @@ export const AuthPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Native Datalist for Browser Device Email Suggestions */}
+              <datalist id="device-email-suggestions">
+                {savedDeviceEmails.map(item => (
+                  <option key={item.email} value={item.email}>
+                    {item.name ? `${item.name} (${item.email})` : item.email}
+                  </option>
+                ))}
+              </datalist>
+
               {/* ============================================================== */}
               {/* TAB 2: UNIVERSITY EMAIL & PASSWORD                             */}
               {/* ============================================================== */}
               {activeTab === 'email' && (
-                <form onSubmit={handleLoginSubmit} className="space-y-3.5 text-xs">
-                  <div>
-                    <label className="block font-bold text-[#1C1917] mb-1">
-                      Email Address
-                    </label>
+                <form onSubmit={handleLoginSubmit} autoComplete="on" className="space-y-3.5 text-xs">
+                  <div ref={emailDropdownRef} className="relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="login-email" className="block font-bold text-[#1C1917]">
+                        Email Address
+                      </label>
+                      {savedDeviceEmails.length > 0 && (
+                        <span className="text-[10px] font-semibold text-[#78716C]">
+                          {savedDeviceEmails.length} saved on this device
+                        </span>
+                      )}
+                    </div>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
+                        id="login-email"
+                        name="email"
                         type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        list="device-email-suggestions"
                         required
                         value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
+                        onFocus={() => setShowEmailSuggestions(true)}
+                        onChange={(e) => {
+                          setLoginEmail(e.target.value);
+                          setShowEmailSuggestions(true);
+                        }}
                         placeholder="Enter your registered email address"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-[#FAF6F0] border border-[#F2ECE4] text-[#1C1917] focus:border-[#E23744] focus:ring-2 focus:ring-[#E23744]/15 focus:outline-none"
+                        className="w-full pl-9 pr-8 py-2.5 rounded-2xl bg-[#FAF6F0] border border-[#F2ECE4] text-[#1C1917] focus:border-[#E23744] focus:ring-2 focus:ring-[#E23744]/15 focus:outline-none"
                       />
+                      {loginEmail && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLoginEmail('');
+                            setShowEmailSuggestions(true);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#1C1917] p-0.5 cursor-pointer"
+                          title="Clear email"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
+
+                    {/* Smart Device Email Suggestions Dropdown */}
+                    {showEmailSuggestions && (matchingDeviceEmails.length > 0 || domainCompletionSuggestions.length > 0) && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-2xl border border-[#F2ECE4] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                        {matchingDeviceEmails.length > 0 && (
+                          <div>
+                            <div className="px-3 py-1.5 bg-[#FAF6F0] border-b border-[#F2ECE4] text-[10px] font-bold text-[#78716C] uppercase tracking-wider flex items-center justify-between">
+                              <span>Suggested Emails on This Device</span>
+                              <span>Tap to fill</span>
+                            </div>
+                            <div className="max-h-44 overflow-y-auto divide-y divide-[#F2ECE4]/60">
+                              {matchingDeviceEmails.map(item => (
+                                <div
+                                  key={item.email}
+                                  className="flex items-center justify-between px-3 py-2 hover:bg-[#FFF8E9] transition-colors group"
+                                >
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleSelectEmailSuggestion(item.email);
+                                    }}
+                                    className="flex-1 flex items-center gap-2.5 text-left cursor-pointer min-w-0"
+                                  >
+                                    <span className="w-7 h-7 rounded-full bg-[#E23744]/10 text-[#E23744] font-bold text-[11px] flex items-center justify-center shrink-0">
+                                      {(item.name?.[0] || item.email[0]).toUpperCase()}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="font-semibold text-[#1C1917] truncate">
+                                        {item.email}
+                                      </div>
+                                      <div className="text-[10px] text-[#78716C] flex items-center gap-1.5">
+                                        {item.name && <span className="truncate">{item.name}</span>}
+                                        <span className="px-1.5 py-0.2 rounded bg-[#FAF6F0] border border-[#F2ECE4] text-[9px] font-bold text-[#78716C]">
+                                          {item.provider === 'google' ? 'Google' : 'Campus ID'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeSavedDeviceEmail(item.email);
+                                    }}
+                                    className="p-1 text-[#78716C] hover:text-[#E23744] opacity-70 hover:opacity-100 cursor-pointer ml-1"
+                                    title="Remove from suggestions"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {domainCompletionSuggestions.length > 0 && (
+                          <div>
+                            <div className="px-3 py-1 bg-[#FAF6F0] border-y border-[#F2ECE4] text-[10px] font-bold text-[#78716C] uppercase tracking-wider">
+                              Quick Email Completion
+                            </div>
+                            <div className="p-1.5 flex flex-wrap gap-1.5">
+                              {domainCompletionSuggestions.map(candidate => (
+                                <button
+                                  key={candidate}
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleSelectEmailSuggestion(candidate);
+                                  }}
+                                  className="px-2.5 py-1 rounded-xl bg-[#FAF6F0] hover:bg-[#FFF8E9] border border-[#F2ECE4] hover:border-[#E23744]/40 text-[#1C1917] font-semibold text-[11px] transition-colors cursor-pointer"
+                                >
+                                  {candidate}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Quick-pick suggestion chips visible directly under email input */}
+                    {savedDeviceEmails.length > 0 && !showEmailSuggestions && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-[#78716C]">Suggestions:</span>
+                        {savedDeviceEmails.slice(0, 3).map(item => (
+                          <button
+                            key={item.email}
+                            type="button"
+                            onClick={() => handleSelectEmailSuggestion(item.email)}
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer flex items-center gap-1 ${
+                              loginEmail.trim().toLowerCase() === item.email.toLowerCase()
+                                ? 'bg-[#E23744] text-white border-[#E23744]'
+                                : 'bg-[#FAF6F0] text-[#1C1917] border-[#F2ECE4] hover:border-[#E23744]/50 hover:bg-[#FFF8E9]'
+                            }`}
+                          >
+                            <Mail className="w-3 h-3 shrink-0" />
+                            <span className="max-w-[190px] truncate">{item.email}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-bold text-[#1C1917]">Password</label>
+                      <label htmlFor="login-password" className="font-bold text-[#1C1917]">Password</label>
                       <button
                         type="button"
                         onClick={() => {
@@ -974,7 +1132,11 @@ export const AuthPage: React.FC = () => {
                     <div className="relative">
                       <KeyRound className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
+                        ref={loginPasswordRef}
+                        id="login-password"
+                        name="password"
                         type={showLoginPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
                         required
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
@@ -1000,6 +1162,7 @@ export const AuthPage: React.FC = () => {
                         onChange={(e) => {
                           const val = e.target.checked;
                           setRememberMe(val);
+                          configurePersistence(val);
                           try {
                             if (val) {
                               localStorage.setItem('mm_remember_credentials', 'true');
@@ -1018,7 +1181,7 @@ export const AuthPage: React.FC = () => {
                         <span className="text-[11px] text-[#78716C] block leading-snug">
                           {rememberMe
                             ? 'Session persists across browser refreshes on this device.'
-                            : 'Session resets on reload. Google Sign-In will prompt for credentials every time.'}
+                            : 'Session resets on reload. Google Sign-In will show your device accounts.'}
                         </span>
                       </div>
                     </label>
@@ -1048,13 +1211,16 @@ export const AuthPage: React.FC = () => {
               {/* TAB 3: REGISTER NEW STUDENT ACCOUNT                            */}
               {/* ============================================================== */}
               {activeTab === 'signup' && (
-                <form onSubmit={handleSignUpSubmit} className="space-y-3 text-xs">
+                <form onSubmit={handleSignUpSubmit} autoComplete="on" className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-[#1C1917] mb-1">Full Name</label>
+                    <label htmlFor="register-name" className="block font-bold text-[#1C1917] mb-1">Full Name</label>
                     <div className="relative">
                       <User className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
+                        id="register-name"
+                        name="name"
                         type="text"
+                        autoComplete="name"
                         required
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
@@ -1066,9 +1232,13 @@ export const AuthPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block font-bold text-[#1C1917] mb-1">University Email</label>
+                      <label htmlFor="register-email" className="block font-bold text-[#1C1917] mb-1">University / Personal Email</label>
                       <input
+                        id="register-email"
+                        name="email"
                         type="email"
+                        inputMode="email"
+                        autoComplete="email"
                         required
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
@@ -1077,9 +1247,12 @@ export const AuthPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-[#1C1917] mb-1">Mobile Number</label>
+                      <label htmlFor="register-phone" className="block font-bold text-[#1C1917] mb-1">Mobile Number</label>
                       <input
+                        id="register-phone"
+                        name="tel"
                         type="tel"
+                        autoComplete="tel"
                         value={regPhone}
                         onChange={(e) => setRegPhone(e.target.value)}
                         placeholder="10-digit number"
@@ -1116,9 +1289,12 @@ export const AuthPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block font-bold text-[#1C1917] mb-1">Password</label>
+                      <label htmlFor="register-password" className="block font-bold text-[#1C1917] mb-1">Password</label>
                       <input
+                        id="register-password"
+                        name="new-password"
                         type="password"
+                        autoComplete="new-password"
                         required
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
@@ -1127,9 +1303,12 @@ export const AuthPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-[#1C1917] mb-1">Confirm Password</label>
+                      <label htmlFor="register-confirm-password" className="block font-bold text-[#1C1917] mb-1">Confirm Password</label>
                       <input
+                        id="register-confirm-password"
+                        name="confirm-password"
                         type="password"
+                        autoComplete="new-password"
                         required
                         value={regConfirmPassword}
                         onChange={(e) => setRegConfirmPassword(e.target.value)}
@@ -1165,13 +1344,18 @@ export const AuthPage: React.FC = () => {
               {activeTab === 'forgot' && (
                 <form onSubmit={handleForgotSubmit} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-bold text-[#1C1917] mb-1">
+                    <label htmlFor="forgot-email" className="block font-bold text-[#1C1917] mb-1">
                       Your Registered Email Address
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
+                        id="forgot-email"
+                        name="email"
                         type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        list="device-email-suggestions"
                         required
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
@@ -1229,7 +1413,7 @@ export const AuthPage: React.FC = () => {
                   <button
                     type="button"
                     disabled={isGoogleSubmitting || isSubmitting}
-                    onClick={handleGoogleSignInClick}
+                    onClick={() => handleGoogleSignInClick(false)}
                     className="w-full py-3.5 px-4 rounded-2xl border border-[#F2ECE4] bg-white hover:bg-[#FAF6F0] text-[#1C1917] font-bold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all shadow-xs hover:shadow-md active:scale-[0.99] cursor-pointer disabled:opacity-60"
                   >
                     {isGoogleSubmitting ? (
@@ -1258,7 +1442,7 @@ export const AuthPage: React.FC = () => {
                           />
                         </svg>
                         <span className="font-bold text-sm text-[#1C1917]">
-                          {rememberedCredentials?.email
+                          {rememberMe && rememberedCredentials?.isGoogle && rememberedCredentials?.email
                             ? `Sign in with Google (${rememberedCredentials.email.split('@')[0]})`
                             : 'Sign in with Google'}
                         </span>
@@ -1267,25 +1451,37 @@ export const AuthPage: React.FC = () => {
                   </button>
 
                   {(rememberMe || Boolean(rememberedCredentials)) && (
-                    <div className="flex items-center justify-between px-2 pt-0.5">
+                    <div className="flex items-center justify-between px-2 pt-0.5 gap-2 flex-wrap">
                       <span className="text-[11px] font-medium text-[#78716C] flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
                         {rememberedCredentials?.email
                           ? `Remembered: ${rememberedCredentials.email}`
-                          : 'Credentials remembered (1-click automatic sign in)'}
+                          : 'Credentials remembered on this device'}
                       </span>
-                      {rememberedCredentials && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            clearRememberedCredentials();
-                            setRememberMe(false);
-                          }}
-                          className="text-[10px] text-[#DC2626] hover:underline font-semibold cursor-pointer"
-                        >
-                          Forget
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {rememberedCredentials?.isGoogle && (
+                          <button
+                            type="button"
+                            disabled={isGoogleSubmitting}
+                            onClick={() => handleGoogleSignInClick(true)}
+                            className="text-[10px] text-[#E23744] hover:underline font-semibold cursor-pointer"
+                          >
+                            Switch Google account
+                          </button>
+                        )}
+                        {rememberedCredentials && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearRememberedCredentials();
+                              setRememberMe(false);
+                            }}
+                            className="text-[10px] text-[#DC2626] hover:underline font-semibold cursor-pointer"
+                          >
+                            Forget
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1296,8 +1492,8 @@ export const AuthPage: React.FC = () => {
             <div className="mt-6 pt-3 border-t border-[#E7E9E3]">
               <p className="text-[10px] text-[#737B74] text-center leading-relaxed">
                 By continuing, you agree to DBS Global University's{' '}
-                <span className="text-[#174D36] underline cursor-pointer">Terms of Service</span> and{' '}
-                <span className="text-[#174D36] underline cursor-pointer">Privacy & Canteen Guidelines</span>.
+                <span className="text-[#E23744] underline cursor-pointer">Terms of Service</span> and{' '}
+                <span className="text-[#E23744] underline cursor-pointer">Privacy & Canteen Guidelines</span>.
               </p>
             </div>
           </div>
@@ -1308,165 +1504,6 @@ export const AuthPage: React.FC = () => {
       <footer className="py-3 text-center text-xs text-[#737B74] border-t border-[#E7E9E3] bg-[#FFF8E9]">
         DBS Global University · MealMate Campus Pre-Ordering Platform · Dehradun
       </footer>
-
-      {/* ============================================================== */}
-      {/* GOOGLE SIGN-IN CREDENTIAL PROMPT MODAL                         */}
-      {/* (Triggered when user chooses NOT to remember credentials)      */}
-      {/* ============================================================== */}
-      {showGoogleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-[#E7E9E3] overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Top Header */}
-            <div className="bg-[#E23744] text-white p-5 relative">
-              <button
-                type="button"
-                onClick={() => setShowGoogleModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-                title="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-heading font-bold text-base text-white">Google Account Sign-In</h3>
-                  <p className="text-xs text-white/80">MealMate · DBS Global University</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-4">
-              <div className="p-3 bg-[#FEF3C7] border border-[#F59E0B]/40 rounded-2xl flex items-start gap-2.5 text-xs text-[#1C1917]">
-                <Info className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  <span className="font-bold block text-[#1C1917]">Google Credential Verification</span>
-                  <span>
-                    You chose not to remember credentials on this device. Please enter your Google account email and password to authenticate.
-                  </span>
-                </div>
-              </div>
-
-              {googleModalError && (
-                <div className="p-3 bg-[#DC2626]/10 text-[#DC2626] rounded-xl text-xs flex items-center gap-2 border border-[#DC2626]/25">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{googleModalError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleGooglePromptSubmit} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block font-bold text-[#1C1917] mb-1">Google Email Address</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="email"
-                      required
-                      value={googleEmail}
-                      onChange={(e) => setGoogleEmail(e.target.value)}
-                      placeholder="Enter your Google email address"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#FAF6F0] border border-[#F2ECE4] text-[#1C1917] focus:border-[#E23744] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#1C1917] mb-1">Google Account Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type={showGooglePassword ? 'text' : 'password'}
-                      required
-                      value={googlePassword}
-                      onChange={(e) => setGooglePassword(e.target.value)}
-                      placeholder="Enter Google account password"
-                      className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-[#FAF6F0] border border-[#F2ECE4] text-[#1C1917] focus:border-[#E23744] focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowGooglePassword(!showGooglePassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#1C1917] cursor-pointer"
-                    >
-                      {showGooglePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Optional toggle to remember this Google account */}
-                <div className="p-3 rounded-2xl bg-[#FAF6F0] border border-[#F2ECE4]">
-                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={googleModalRemember}
-                      onChange={(e) => setGoogleModalRemember(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-[#E23744] border-[#F2ECE4] focus:ring-[#E23744] accent-[#E23744] cursor-pointer"
-                    />
-                    <div>
-                      <span className="font-bold text-xs text-[#1C1917] block">
-                        Remember this Google account on this device
-                      </span>
-                      <span className="text-[11px] text-[#78716C] block leading-snug">
-                        {googleModalRemember
-                          ? 'Account credentials will be remembered for future access.'
-                          : 'Do not remember. Next time you sign in with Google, you will be prompted for credentials again.'}
-                      </span>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Action buttons (No autofill student account button) */}
-                <div className="flex gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    disabled={isGoogleSubmitting}
-                    onClick={() => setShowGoogleModal(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-[#E7E9E3] text-[#737B74] hover:bg-[#FFF8E9] hover:text-[#252D28] font-bold transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={isGoogleSubmitting}
-                    className="flex-2 py-2.5 rounded-xl bg-[#E23744] hover:bg-[#CB202D] text-white font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-60"
-                  >
-                    {isGoogleSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#FDE047]" />
-                        <span>Signing In...</span>
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="w-4 h-4 text-white" />
-                        <span>Sign In to Google</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

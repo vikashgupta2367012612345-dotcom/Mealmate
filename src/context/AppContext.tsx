@@ -11,7 +11,8 @@ import {
   StudentReview,
   StudentComplaint,
   SelectedAddOn,
-  MealCategory
+  MealCategory,
+  DeviceEmailSuggestion
 } from '../types';
 import {
   STARTER_MEALS,
@@ -93,6 +94,8 @@ interface AppContextType {
   loginWithGoogle: (googleUser?: { name?: string; email?: string; password?: string }, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   rememberedCredentials: { email: string; isGoogle?: boolean } | null;
   clearRememberedCredentials: () => void;
+  savedDeviceEmails: DeviceEmailSuggestion[];
+  removeSavedDeviceEmail: (email: string) => void;
   registerUser: (userData: {
     name: string;
     email: string;
@@ -102,6 +105,7 @@ interface AppContextType {
     password?: string;
     role?: 'student' | 'vendor' | 'admin';
     assignedVendor?: string;
+    rememberMe?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   registeredAccounts: RegisteredAccount[];
@@ -285,6 +289,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRememberedCredentials(null);
     showToast('Saved credentials cleared from this device.');
   }, [showToast]);
+
+  // Device email suggestions history (shows previously used emails on this device during login)
+  const [savedDeviceEmails, setSavedDeviceEmails] = useState<DeviceEmailSuggestion[]>(() => {
+    try {
+      const raw = localStorage.getItem('mm_device_email_suggestions_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+      // Seed from remembered email if already present on device
+      const remembered = localStorage.getItem('mm_remembered_email');
+      if (remembered && remembered.includes('@')) {
+        return [{
+          email: remembered.trim().toLowerCase(),
+          provider: localStorage.getItem('mm_remembered_is_google') === 'true' ? 'google' : 'email',
+          lastUsedAt: new Date().toISOString()
+        }];
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const saveDeviceEmailSuggestion = useCallback((email: string, name?: string, provider: 'email' | 'google' = 'email') => {
+    const clean = email.trim().toLowerCase();
+    if (!clean || !clean.includes('@')) return;
+    setSavedDeviceEmails(prev => {
+      const existing = prev.find(item => item.email.toLowerCase() === clean);
+      const updatedEntry: DeviceEmailSuggestion = {
+        email: clean,
+        name: name?.trim() || existing?.name,
+        provider: provider || existing?.provider || 'email',
+        lastUsedAt: new Date().toISOString()
+      };
+      const next = [updatedEntry, ...prev.filter(item => item.email.toLowerCase() !== clean)].slice(0, 8);
+      try {
+        localStorage.setItem('mm_device_email_suggestions_v1', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const removeSavedDeviceEmail = useCallback((email: string) => {
+    const clean = email.trim().toLowerCase();
+    setSavedDeviceEmails(prev => {
+      const next = prev.filter(item => item.email.toLowerCase() !== clean);
+      try {
+        localStorage.setItem('mm_device_email_suggestions_v1', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
 
   // Session persistence and restoration logic
   useEffect(() => {
@@ -566,7 +621,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else {
             return {
               success: false,
-              error: 'Incorrect password. Please enter your valid account password or use "Forgot password?".'
+              error: 'Incorrect password, or no Email & Password account exists for this email yet. If you registered with Google, tap "Sign in with Google" below, use "Forgot password?", or create a New Account.'
             };
           }
         } else if (code === 'auth/user-not-found' || msg.includes('user-not-found')) {
@@ -588,6 +643,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             success: false,
             error: 'Invalid email address format. Please enter a valid email address.'
+          };
+        } else if (code === 'auth/network-request-failed') {
+          return {
+            success: false,
+            error: 'Network connection error. Please check your internet and try again.'
           };
         } else {
           // Any other error from Firebase: fail securely unless local credentials match
@@ -763,12 +823,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      saveDeviceEmailSuggestion(activeProfile.email, activeProfile.name, 'email');
       showToast(`Welcome back, ${activeProfile.name.split(' ')[0]}! Signed in as ${activeProfile.role}.`);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed. Please check credentials.' };
     }
-  }, [showToast]);
+  }, [showToast, registeredAccounts, saveDeviceEmailSuggestion]);
 
   const registerUser = useCallback(async (userData: {
     name: string;
@@ -779,6 +840,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     password?: string;
     role?: 'student' | 'vendor' | 'admin';
     assignedVendor?: string;
+    rememberMe?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
     const cleanName = userData.name.trim();
     const cleanEmail = userData.email.trim().toLowerCase();
@@ -787,6 +849,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanPassword = (userData.password || '').trim();
     const role = userData.role || 'student';
     const assignedVendor = userData.assignedVendor;
+    const rememberMe = Boolean(userData.rememberMe);
 
     if (!cleanName || cleanName.length < 2) {
       return { success: false, error: 'Please enter your full name.' };
@@ -802,8 +865,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      // Register with Firebase Auth using inMemoryPersistence
-      const cred = await firebaseSignUp(cleanEmail, cleanPassword, cleanName);
+      // Register with Firebase Auth
+      const cred = await firebaseSignUp(cleanEmail, cleanPassword, cleanName, rememberMe);
       const uid = cred.user.uid;
 
       const newProfile: UserProfile = {
@@ -829,7 +892,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Record registered account credentials for strict password verification
+      // Record registered account metadata
       const newAcc: RegisteredAccount = {
         uid,
         name: cleanName,
@@ -843,7 +906,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       setRegisteredAccounts(prev => [...prev.filter(a => a.email !== cleanEmail), newAcc]);
 
-      // Set state in memory only:
+      if (rememberMe) {
+        try {
+          localStorage.setItem('mm_remember_credentials', 'true');
+          localStorage.setItem('mm_remembered_email', cleanEmail);
+          localStorage.setItem('mm_remembered_is_google', 'false');
+          localStorage.setItem('mm_remembered_user', JSON.stringify(newProfile));
+        } catch (e) {}
+        setRememberedCredentials({ email: cleanEmail, isGoogle: false });
+      }
+
+      saveDeviceEmailSuggestion(cleanEmail, cleanName, 'email');
+
       setCurrentUser(newProfile);
       setActiveRole(role);
       setCart([]);
@@ -856,7 +930,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (err.code === 'auth/email-already-in-use') {
         return {
           success: false,
-          error: `An account with ${cleanEmail} already exists. Please select "Sign In" to log in.`
+          error: `An account with ${cleanEmail} already exists. Please select "Email & Pass" (or use "Forgot password?" / "Sign in with Google").`
         };
       }
       return {
@@ -864,7 +938,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         error: err.message?.replace('Firebase: ', '') || 'Registration failed. Please try again.'
       };
     }
-  }, [showToast]);
+  }, [showToast, saveDeviceEmailSuggestion]);
 
   const forgotPassword = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
@@ -975,23 +1049,110 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       let email = googleUser?.email;
       let name = googleUser?.name;
+      let photoURL: string | undefined = undefined;
       const pass = googleUser?.password;
       let firebaseUid: string | null = null;
+      let rememberedProfile: UserProfile | null = null;
 
-      // 1. Try real Firebase GoogleAuthProvider popup sign-in if no explicit email & password passed
-      if (!email && !pass) {
+      // 0. Only reuse a remembered Google session if Firebase Auth already holds an active matching user
+      if (email && !pass && rememberMe && auth?.currentUser) {
+        try {
+          const isRemembered = localStorage.getItem('mm_remember_credentials') === 'true';
+          const isGoogleSaved = localStorage.getItem('mm_remembered_is_google') === 'true';
+          const savedUserRaw = localStorage.getItem('mm_remembered_user');
+          if (isRemembered && isGoogleSaved && savedUserRaw) {
+            const parsed: UserProfile = JSON.parse(savedUserRaw);
+            const activeEmail = auth.currentUser.email?.trim().toLowerCase();
+            if (
+              parsed?.uid &&
+              parsed.uid === auth.currentUser.uid &&
+              activeEmail === email.trim().toLowerCase()
+            ) {
+              firebaseUid = auth.currentUser.uid;
+              email = auth.currentUser.email || parsed.email;
+              name = auth.currentUser.displayName || parsed.name || name;
+              photoURL = auth.currentUser.photoURL || parsed.photoURL || undefined;
+              rememberedProfile = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 1. Trigger real Firebase GoogleAuthProvider popup sign-in (shows all Google emails on the device)
+      if (!firebaseUid && !pass) {
         try {
           const cred = await firebaseGoogleSignIn(rememberMe);
           if (cred?.user) {
-            email = cred.user.email || undefined;
-            name = cred.user.displayName || undefined;
+            const googleProviderData = cred.user.providerData?.find(
+              (p) => p?.providerId === 'google.com'
+            );
+            email = cred.user.email || googleProviderData?.email || undefined;
+            name = cred.user.displayName || googleProviderData?.displayName || undefined;
+            photoURL = cred.user.photoURL || googleProviderData?.photoURL || undefined;
             firebaseUid = cred.user.uid;
           }
         } catch (popupErr: any) {
-          console.warn('Firebase Google popup notice:', popupErr);
+          console.error('Firebase Google popup error:', popupErr);
+          const code = popupErr?.code || '';
+          const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+
+          if (code === 'auth/argument-error') {
+            return {
+              success: false,
+              error: 'Google Sign-In configuration error (auth/argument-error): popup resolver was missing or invalid. Please refresh the page and try again.'
+            };
+          }
+          if (code === 'auth/popup-closed-by-user') {
+            return {
+              success: false,
+              error: 'Google Sign-In window was closed before completing authentication. Please select your Google account to continue.'
+            };
+          }
+          if (code === 'auth/cancelled-popup-request') {
+            return {
+              success: false,
+              error: 'A Google Sign-In popup is already open or was interrupted. Please wait a moment and click "Sign in with Google" again.'
+            };
+          }
+          if (code === 'auth/popup-blocked') {
+            return {
+              success: false,
+              error: 'Your browser blocked the Google Sign-In popup. Please allow popups for this site and try again.'
+            };
+          }
+          if (code === 'auth/unauthorized-domain') {
+            return {
+              success: false,
+              error: `Domain not authorized in Firebase! In Firebase Console > Authentication > Settings > Authorized domains, add "${currentHost}".`
+            };
+          }
+          if (code === 'auth/operation-not-allowed') {
+            return {
+              success: false,
+              error: 'Google Sign-In is currently disabled in Firebase Console. Enable the Google provider under Authentication > Sign-in method.'
+            };
+          }
+          if (code === 'auth/account-exists-with-different-credential') {
+            return {
+              success: false,
+              error: 'An account already exists with this email using Email & Password. Please sign in with Email & Pass first.'
+            };
+          }
+          if (code === 'auth/network-request-failed') {
+            return {
+              success: false,
+              error: 'Network error while connecting to Google Sign-In. Please check your internet connection and try again.'
+            };
+          }
+          if (code === 'auth/internal-error') {
+            return {
+              success: false,
+              error: 'Google Sign-In encountered an internal authentication error. Please verify your Firebase Google provider and OAuth consent configuration.'
+            };
+          }
           return {
             success: false,
-            error: 'Google Sign-In popup could not open. Please enter your registered Google email and password.'
+            error: popupErr?.message?.replace(/^Firebase:\s*/i, '') || 'Google Sign-In could not complete. Please verify authorized domain or use Email & Pass.'
           };
         }
       }
@@ -999,31 +1160,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!email) {
         return {
           success: false,
-          error: 'Please enter your Google email address.'
+          error: 'Could not retrieve your Google email address. Please ensure your Google account grants email access and try again.'
         };
       }
 
       const cleanEmail = email.trim().toLowerCase();
       const cleanName = name?.trim() || cleanEmail.split('@')[0].replace(/[._0-9]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).trim() || 'Google Student';
 
-      // 2. If password was provided, strictly verify it via Firebase Auth
+      // 2. If explicit email & password were passed (fallback), strictly verify via Firebase Auth
       if (!firebaseUid) {
         if (!pass) {
           return {
             success: false,
-            error: 'Please enter your account password.'
+            error: 'Please complete Google Sign-In or enter your account password.'
           };
         }
 
         try {
           const userCred = await firebaseSignIn(cleanEmail, pass, rememberMe);
           firebaseUid = userCred.user.uid;
+          photoURL = userCred.user.photoURL || photoURL;
         } catch (authErr: any) {
           const code = authErr?.code || '';
           const msg = authErr?.message || '';
           console.warn('Firebase Google verification notice:', code, msg);
 
-          // Check if user has an account registered in local registeredAccounts:
           const localMatch = registeredAccounts.find(a => a.email.toLowerCase() === cleanEmail);
 
           if (
@@ -1032,7 +1193,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             msg.includes('INVALID_LOGIN_CREDENTIALS') ||
             msg.includes('wrong-password')
           ) {
-            // Strictly reject wrong password!
             if (localMatch && localMatch.password === pass) {
               firebaseUid = localMatch.uid;
             } else {
@@ -1063,27 +1223,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Handle remember credentials preference
-      if (rememberMe) {
-        try {
-          localStorage.setItem('mm_remember_credentials', 'true');
-          localStorage.setItem('mm_remembered_email', cleanEmail);
-          localStorage.setItem('mm_remembered_is_google', 'true');
-        } catch (e) {}
-        setRememberedCredentials({ email: cleanEmail, isGoogle: true });
-      } else {
-        try {
-          localStorage.removeItem('mm_remember_credentials');
-          localStorage.removeItem('mm_remembered_email');
-          localStorage.removeItem('mm_remembered_is_google');
-          localStorage.removeItem('mm_remembered_user');
-        } catch (e) {}
-        setRememberedCredentials(null);
-      }
-
-      // Check or create profile in Firestore /users/{uid}
-      let profile: UserProfile | null = null;
-      if (db && firebaseUid) {
+      // 3. Check or create profile in Firestore /users/{uid}
+      let profile: UserProfile | null = rememberedProfile;
+      if (!profile && db && firebaseUid) {
         try {
           const snap = await getDoc(doc(db, 'users', firebaseUid));
           if (snap.exists()) {
@@ -1095,27 +1237,90 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (!profile) {
-        const rollSeed = Math.floor(100 + Math.random() * 900);
-        const nameCode = cleanName.replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase() || 'DGU';
-        profile = {
-          uid: firebaseUid,
-          name: cleanName,
-          email: cleanEmail,
-          rollNo: `0251MBA${rollSeed}`,
-          role: 'student',
-          hostelBlock: 'Mandakini Boys Hostel',
-          isLoggedIn: true,
-          favorites: [],
-          referralCode: `${nameCode}${rollSeed}-MM`,
-          savedOrdersCount: 0
-        };
+        if (cleanEmail.includes('canteen') || cleanEmail.includes('vendor')) {
+          profile = {
+            uid: firebaseUid,
+            name: cleanName || 'Central Canteen Kitchen Lead',
+            email: cleanEmail,
+            ...(photoURL ? { photoURL } : {}),
+            role: 'vendor',
+            assignedVendor: 'DGU Central Canteen',
+            hostelBlock: 'Campus Central Dining Hall',
+            isLoggedIn: true,
+            favorites: [],
+            referralCode: 'CANTEEN-VEND',
+            savedOrdersCount: 0
+          };
+        } else if (cleanEmail.includes('director') || cleanEmail.includes('admin')) {
+          profile = {
+            uid: firebaseUid,
+            name: cleanName || 'Campus Dining Directorate',
+            email: cleanEmail,
+            ...(photoURL ? { photoURL } : {}),
+            role: 'admin',
+            hostelBlock: 'Administrative Block A',
+            isLoggedIn: true,
+            favorites: [],
+            referralCode: 'ADMIN-DGU',
+            savedOrdersCount: 0
+          };
+        } else if (cleanEmail.includes('vikash') || cleanEmail.includes('0251')) {
+          profile = {
+            uid: firebaseUid,
+            name: cleanName || 'Vikash Kumar Gupta',
+            email: cleanEmail,
+            ...(photoURL ? { photoURL } : {}),
+            rollNo: '0251MBA621',
+            role: 'student',
+            hostelBlock: 'Mandakini Boys Hostel',
+            isLoggedIn: true,
+            favorites: ['1', '3', '7'],
+            referralCode: 'VIKASH0251-MM',
+            savedOrdersCount: 0
+          };
+        } else {
+          const rollSeed = Math.floor(100 + Math.random() * 900);
+          const nameCode = cleanName.replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase() || 'DGU';
+          profile = {
+            uid: firebaseUid,
+            name: cleanName,
+            email: cleanEmail,
+            ...(photoURL ? { photoURL } : {}),
+            rollNo: `0251MBA${rollSeed}`,
+            role: 'student',
+            hostelBlock: 'Mandakini Boys Hostel',
+            isLoggedIn: true,
+            favorites: [],
+            referralCode: `${nameCode}${rollSeed}-MM`,
+            savedOrdersCount: 0
+          };
+        }
+
         if (db && firebaseUid) {
           try {
-            await setDoc(doc(db, 'users', firebaseUid), profile, { merge: true });
-          } catch (e) {}
+            const firestoreData = Object.fromEntries(
+              Object.entries(profile).filter(([, value]) => value !== undefined)
+            );
+            await setDoc(doc(db, 'users', firebaseUid), firestoreData, { merge: true });
+          } catch (e) {
+            console.warn('Firestore setDoc google user notice:', e);
+          }
         }
       } else {
-        profile = { ...profile, isLoggedIn: true };
+        const mergedPhotoURL = photoURL || profile.photoURL;
+        profile = {
+          ...profile,
+          uid: firebaseUid,
+          name: profile.name || cleanName,
+          email: profile.email || cleanEmail,
+          ...(mergedPhotoURL ? { photoURL: mergedPhotoURL } : {}),
+          isLoggedIn: true
+        };
+        if (db && firebaseUid && photoURL && photoURL !== profile.photoURL) {
+          try {
+            await setDoc(doc(db, 'users', firebaseUid), { photoURL, name: profile.name, email: profile.email }, { merge: true });
+          } catch (e) {}
+        }
       }
 
       if (rememberMe) {
@@ -1136,32 +1341,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setRememberedCredentials(null);
       }
 
+      saveDeviceEmailSuggestion(cleanEmail, profile.name || cleanName, 'google');
+
       setCurrentUser(profile);
       setActiveRole(profile.role || 'student');
       setFavorites(profile.favorites || []);
       setCart([]);
-      
-      // Load only realistic orders placed by this student (no fake pre-populated orders)
-      try {
-        const saved = localStorage.getItem('mm_real_orders_v1');
-        if (saved) {
-          const parsed: Order[] = JSON.parse(saved);
-          const userOrders = Array.isArray(parsed)
-            ? parsed.filter(o => o.userId === firebaseUid && o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103')
-            : [];
-          setOrders(userOrders);
-        } else {
+
+      // Strictly isolate orders by role (no fake pre-populated orders for students)
+      if (profile.role === 'admin') {
+        setOrders(INITIAL_ORDERS);
+      } else if (profile.role === 'vendor') {
+        const vendorTarget = profile.assignedVendor || 'DGU Central Canteen';
+        setOrders(INITIAL_ORDERS.filter(o => o.vendorName === vendorTarget));
+      } else {
+        try {
+          const saved = localStorage.getItem('mm_real_orders_v1');
+          if (saved) {
+            const parsed: Order[] = JSON.parse(saved);
+            const userOrders = Array.isArray(parsed)
+              ? parsed.filter(o => o.userId === firebaseUid && o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103')
+              : [];
+            setOrders(userOrders);
+          } else {
+            setOrders([]);
+          }
+        } catch (e) {
           setOrders([]);
         }
-      } catch (e) {
-        setOrders([]);
       }
-      showToast(`Signed in with Google as ${cleanName.split(' ')[0]}!`);
+
+      showToast(`Signed in with Google as ${(profile.name || cleanName).split(' ')[0]}!`);
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err.message || 'Google Sign-In failed.' };
+      return { success: false, error: err?.message?.replace(/^Firebase:\s*/i, '') || 'Google Sign-In failed.' };
     }
-  }, [showToast]);
+  }, [showToast, registeredAccounts, saveDeviceEmailSuggestion]);
 
   const logoutUser = useCallback(async () => {
     try {
@@ -1893,6 +2108,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginWithGoogle,
         rememberedCredentials,
         clearRememberedCredentials,
+        savedDeviceEmails,
+        removeSavedDeviceEmail,
         registerUser,
         forgotPassword,
         registeredAccounts,

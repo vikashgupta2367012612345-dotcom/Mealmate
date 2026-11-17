@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   ShoppingBag,
@@ -44,6 +44,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [currentUser.photoURL]);
 
   const activeOrdersCount = orders.filter(
     o => o.id !== 'ord-101' && o.id !== 'ord-102' && o.id !== 'ord-103' &&
@@ -286,8 +291,18 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#1C1917] bg-white hover:bg-[#FAF6F0] rounded-xl border border-[#F2ECE4] transition-colors cursor-pointer shadow-2xs"
                 title="Open Student Profile"
               >
-                <div className="w-5 h-5 rounded-full bg-[#E23744] text-[#FFFDF9] text-[10px] font-bold flex items-center justify-center">
-                  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'V'}
+                <div className="w-5 h-5 rounded-full bg-[#E23744] text-[#FFFDF9] text-[10px] font-bold flex items-center justify-center overflow-hidden shrink-0">
+                  {currentUser.photoURL && !avatarError ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.name || 'Profile'}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : (
+                    currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'V'
+                  )}
                 </div>
                 <span className="hidden md:inline max-w-[80px] truncate">{currentUser.name.split(' ')[0]}</span>
               </button>

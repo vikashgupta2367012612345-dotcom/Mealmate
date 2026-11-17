@@ -160,6 +160,7 @@ export interface UserProfile {
   uid: string;
   name: string;
   email: string;
+  photoURL?: string;
   rollNo?: string;
   role: 'student' | 'vendor' | 'admin';
   assignedVendor?: string;
@@ -183,6 +184,13 @@ export interface RegisteredAccount {
   password?: string;
   createdAt: string;
   role?: 'student' | 'vendor' | 'admin';
+}
+
+export interface DeviceEmailSuggestion {
+  email: string;
+  name?: string;
+  provider?: 'email' | 'google';
+  lastUsedAt: string;
 }
 
 export interface PromotionalCoupon {

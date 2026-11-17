@@ -5,6 +5,7 @@ import {
   setPersistence,
   inMemoryPersistence,
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -71,7 +72,8 @@ try {
 
   try {
     auth = initializeAuth(app, {
-      persistence: initialPersistence
+      persistence: initialPersistence,
+      popupRedirectResolver: browserPopupRedirectResolver
     });
   } catch (authErr) {
     auth = getAuth(app);
@@ -151,14 +153,19 @@ export async function firebaseSignOut() {
 }
 
 /**
- * Firebase Auth Google popup sign-in with persistence mode
+ * Firebase Auth Google popup sign-in with account chooser list
+ * Invokes signInWithPopup synchronously inside user click gesture so browsers/mobile devices do not block it
  */
 export async function firebaseGoogleSignIn(rememberMe = false) {
-  await configurePersistence(rememberMe);
   if (!auth) throw new Error('Firebase Auth is not initialized');
   const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
   provider.setCustomParameters({ prompt: 'select_account' });
-  return signInWithPopup(auth, provider);
+  const cred = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+  // Ensure persistence matches user's rememberMe choice
+  await configurePersistence(rememberMe);
+  return cred;
 }
 
 /**
@@ -199,6 +206,7 @@ export {
   setPersistence,
   inMemoryPersistence,
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,

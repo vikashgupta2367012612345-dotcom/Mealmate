@@ -28,7 +28,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   defaultTab
 }) => {
-  const { loginUser, loginWithGoogle, rememberedCredentials, registerUser, registeredAccounts } = useApp();
+  const { loginUser, loginWithGoogle, rememberedCredentials, savedDeviceEmails, registerUser, registeredAccounts } = useApp();
 
   // If no real accounts registered yet, automatically present "Create Account"
   const [activeTab, setActiveTab] = useState<'login' | 'create'>(() => {
@@ -80,7 +80,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsGoogleSubmitting(true);
     try {
       const res = await loginWithGoogle(
-        rememberedCredentials ? { email: rememberedCredentials.email } : undefined,
+        rememberMe && rememberedCredentials?.isGoogle && rememberedCredentials?.email
+          ? { email: rememberedCredentials.email }
+          : undefined,
         rememberMe
       );
       if (res.success) {
@@ -291,9 +293,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Registered Email or Mobile No.
               </label>
               <div className="relative">
+                <datalist id="modal-device-email-suggestions">
+                  {savedDeviceEmails.map(item => (
+                    <option key={item.email} value={item.email}>
+                      {item.name ? `${item.name} (${item.email})` : item.email}
+                    </option>
+                  ))}
+                </datalist>
                 <Mail className="w-4 h-4 text-[#8a9992] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="text"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  list="modal-device-email-suggestions"
                   required
                   value={loginIdentifier}
                   onChange={e => setLoginIdentifier(e.target.value)}
@@ -313,6 +325,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <KeyRound className="w-4 h-4 text-[#8a9992] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type={showLoginPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete="current-password"
                   required
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}

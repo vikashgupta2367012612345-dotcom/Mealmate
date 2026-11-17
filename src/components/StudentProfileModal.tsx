@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   X,
@@ -45,11 +45,16 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'favorites' | 'referrals' | 'support'>('profile');
+  const [avatarError, setAvatarError] = useState(false);
 
   // Support ticket form
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketVendor, setTicketVendor] = useState('DGU Central Canteen');
   const [ticketMessage, setTicketMessage] = useState('');
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [currentUser.photoURL]);
 
   if (!isOpen) return null;
 
@@ -92,8 +97,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
         {/* Modal Header */}
         <div className="p-5 bg-[#174D36] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#F3A64A] text-[#174D36] flex items-center justify-center font-bold text-lg shadow-sm">
-              {currentUser.name.charAt(0)}
+            <div className="w-12 h-12 rounded-2xl bg-[#F3A64A] text-[#174D36] flex items-center justify-center font-bold text-lg shadow-sm overflow-hidden shrink-0">
+              {currentUser.photoURL && !avatarError ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.name || 'Student Profile'}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'S'
+              )}
             </div>
             <div>
               <h2 className="font-bold text-base sm:text-lg font-heading">{currentUser.name}</h2>
