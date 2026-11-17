@@ -994,7 +994,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const cred = await firebaseGoogleSignIn(rememberMe);
           if (cred?.user) {
             const googleProviderData = cred.user.providerData?.find(
-              (p) => p?.providerId === 'google.com'
+              (p: { providerId?: string; email?: string | null; displayName?: string | null; photoURL?: string | null }) =>
+                p?.providerId === 'google.com'
             );
             email = cred.user.email || googleProviderData?.email || undefined;
             name = cred.user.displayName || googleProviderData?.displayName || undefined;
@@ -1002,8 +1003,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             firebaseUid = cred.user.uid;
           }
         } catch (popupErr: any) {
-          console.error('Firebase Google popup error:', popupErr);
           const code = popupErr?.code || '';
+          console.warn('Firebase Google popup notice:', code || popupErr?.message);
           const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
 
           if (code === 'auth/argument-error') {

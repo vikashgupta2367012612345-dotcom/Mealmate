@@ -107,6 +107,7 @@ export const AuthPage: React.FC = () => {
    *   any Google/Gmail account signed into their current device!
    */
   const handleGoogleSignInClick = async (forceAccountPicker = false) => {
+    if (isGoogleSubmitting) return;
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsGoogleSubmitting(true);

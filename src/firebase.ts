@@ -149,17 +149,24 @@ export async function firebaseSignOut() {
   return signOut(auth);
 }
 
+let activeGooglePopupPromise: Promise<any> | null = null;
+
 /**
  * Firebase Auth Google popup sign-in with account chooser list
  * Invokes signInWithPopup synchronously inside user click gesture so browsers/mobile devices do not block it
  */
 export async function firebaseGoogleSignIn(rememberMe = false) {
   if (!auth) throw new Error('Firebase Auth is not initialized');
-  const provider = new GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  provider.setCustomParameters({ prompt: 'select_account' });
-  const cred = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+  if (!activeGooglePopupPromise) {
+    const provider = new GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({ prompt: 'select_account' });
+    activeGooglePopupPromise = signInWithPopup(auth, provider, browserPopupRedirectResolver).finally(() => {
+      activeGooglePopupPromise = null;
+    });
+  }
+  const cred = await activeGooglePopupPromise;
   // Ensure persistence matches user's rememberMe choice
   await configurePersistence(rememberMe);
   return cred;
