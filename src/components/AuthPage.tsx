@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import {
-  createRecaptchaVerifier,
-  firebaseSendPhoneOtp,
-  configurePersistence
-} from '../firebase';
+import { configurePersistence } from '../firebase';
 import {
   GraduationCap,
   ShieldCheck,
@@ -25,10 +21,7 @@ import {
   Home,
   Loader2,
   X,
-  Info,
-  Smartphone,
   Check,
-  RotateCw,
   UtensilsCrossed,
   Flame,
   Star,
@@ -39,7 +32,6 @@ import {
 export const AuthPage: React.FC = () => {
   const {
     loginUser,
-    loginWithPhoneOtp,
     loginWithGoogle,
     rememberedCredentials,
     clearRememberedCredentials,
@@ -50,8 +42,8 @@ export const AuthPage: React.FC = () => {
     showToast
   } = useApp();
 
-  // Mode: 'phone' (Swiggy/Zomato style) | 'email' | 'signup' | 'forgot'
-  const [activeTab, setActiveTab] = useState<'phone' | 'email' | 'signup' | 'forgot'>('phone');
+  // Mode: 'email' | 'signup' | 'forgot'
+  const [activeTab, setActiveTab] = useState<'email' | 'signup' | 'forgot'>('email');
 
   // Remember credentials preference (reads saved setting so preference persists)
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
@@ -63,15 +55,6 @@ export const AuthPage: React.FC = () => {
       return false;
     }
   });
-
-  // Phone / Real SMS OTP state
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const [otpValues, setOtpValues] = useState<string[]>(['', '', '', '', '', '']);
-  const [otpTimer, setOtpTimer] = useState(30);
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Email / Password inputs (prefilled with remembered email if saved)
   const [loginEmail, setLoginEmail] = useState(() => rememberedCredentials?.email || '');
@@ -115,17 +98,6 @@ export const AuthPage: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Resend OTP countdown ticker
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isOtpSent && otpTimer > 0) {
-      interval = setInterval(() => {
-        setOtpTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isOtpSent, otpTimer]);
 
   /**
    * Handle user clicking "Sign in with Google"
@@ -193,144 +165,6 @@ export const AuthPage: React.FC = () => {
     setTimeout(() => {
       loginPasswordRef.current?.focus();
     }, 30);
-  };
-
-  /**
-   * Request Real SMS OTP to user's phone number via Firebase Phone Auth
-   */
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const cleanNumber = phoneNumber.replace(/[^0-9]/g, '').slice(-10);
-    if (!cleanNumber || cleanNumber.length !== 10) {
-      setErrorMessage('Please enter your 10-digit mobile number.');
-      return;
-    }
-
-    setIsSendingOtp(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    try {
-      // Clean up previous verifier if any to prevent already-rendered errors
-      try {
-        if ((window as any).recaptchaVerifier?.clear) {
-          (window as any).recaptchaVerifier.clear();
-        }
-      } catch (e) {}
-      (window as any).recaptchaVerifier = null;
-
-      const verifier = createRecaptchaVerifier('recaptcha-container');
-      (window as any).recaptchaVerifier = verifier;
-
-      const formattedPhone = `+91${cleanNumber}`;
-      const result = await firebaseSendPhoneOtp(formattedPhone, verifier, rememberMe);
-      setConfirmationResult(result);
-      setIsOtpSent(true);
-      setOtpTimer(60);
-      setOtpValues(['', '', '', '', '', '']); // Keep completely empty, no suggestions
-      setSuccessMessage(`Real SMS verification code dispatched to +91 ${cleanNumber}. Please check your phone messages.`);
-    } catch (err: any) {
-      console.warn('Firebase Phone Auth send notice:', err?.code || err?.message);
-      try {
-        if ((window as any).recaptchaVerifier?.clear) {
-          (window as any).recaptchaVerifier.clear();
-        }
-      } catch (e) {}
-      (window as any).recaptchaVerifier = null;
-
-      const code = err?.code || '';
-      const rawMsg = err?.message || '';
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
-
-      if (code === 'auth/billing-not-enabled' || rawMsg.includes('billing-not-enabled')) {
-        setErrorMessage(
-          'Firebase requires a Blaze billing account to dispatch cellular SMS to real phone numbers. To use Phone Sign-In for FREE without credit card/billing: add your number under "Phone numbers for testing" in Firebase Console (Authentication > Sign-in method > Phone).'
-        );
-      } else if (code === 'auth/operation-not-allowed' || rawMsg.includes('operation-not-allowed')) {
-        setErrorMessage(
-          'Phone Sign-In is disabled in your Firebase project (mealmate-d6e7e). In Firebase Console > Authentication > Sign-in method, click "Phone", toggle "Enable", and click "Save".'
-        );
-      } else if (code === 'auth/unauthorized-domain' || rawMsg.includes('unauthorized-domain')) {
-        setErrorMessage(
-          `Domain not authorized in Firebase! In Firebase Console > Authentication > Settings > Authorized domains, add "${currentHost}".`
-        );
-      } else if (code === 'auth/invalid-phone-number') {
-        setErrorMessage('Invalid mobile number. Please enter a valid 10-digit number.');
-      } else if (code === 'auth/too-many-requests' || code === 'auth/quota-exceeded') {
-        setErrorMessage('Daily SMS quota exceeded or too many attempts. Please try again later or sign in with University Email.');
-      } else if (code === 'auth/captcha-check-failed' || code === 'auth/invalid-app-credential') {
-        setErrorMessage('reCAPTCHA verification check failed. Please tap "Send One Time Password" again.');
-      } else {
-        setErrorMessage(`Firebase SMS Notice [${code || 'error'}]: ${rawMsg.replace('Firebase: ', '') || 'Could not send SMS verification code.'}`);
-      }
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  /**
-   * Handle 6-digit OTP input change
-   */
-  const handleOtpBoxChange = (index: number, val: string) => {
-    const char = val.slice(-1);
-    if (char && !/^[0-9]$/.test(char)) return;
-
-    const newOtp = [...otpValues];
-    newOtp[index] = char;
-    setOtpValues(newOtp);
-
-    // Auto advance focus to next input
-    if (char && index < 5) {
-      otpInputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
-    if (pasted.length > 0) {
-      const newOtp = [...otpValues];
-      for (let i = 0; i < 6; i++) {
-        newOtp[i] = pasted[i] || '';
-      }
-      setOtpValues(newOtp);
-      otpInputRefs.current[Math.min(pasted.length, 5)]?.focus();
-    }
-  };
-
-  /**
-   * Verify Real Phone OTP and login
-   */
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    const code = otpValues.join('');
-    if (code.length !== 6) {
-      setErrorMessage('Please enter the 6-digit verification code received on your phone.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await loginWithPhoneOtp(phoneNumber, code, rememberMe, confirmationResult);
-      if (!res.success) {
-        setErrorMessage(res.error || 'OTP verification failed. Please enter the valid code received via SMS.');
-      }
-    } catch (err: any) {
-      setErrorMessage(err?.message || 'Verification encountered an error.');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   /**
@@ -571,13 +405,11 @@ export const AuthPage: React.FC = () => {
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-heading font-black text-[#1C1917] tracking-tight">
-                  {activeTab === 'phone' && 'Sign in to order food'}
                   {activeTab === 'email' && 'Campus ID Sign In'}
                   {activeTab === 'signup' && 'Create your food pass'}
                   {activeTab === 'forgot' && 'Reset your password'}
                 </h1>
                 <p className="text-xs text-[#78716C] mt-1">
-                  {activeTab === 'phone' && 'Enter your 10-digit mobile number to receive an SMS verification code.'}
                   {activeTab === 'email' && 'Sign in with your registered university email address.'}
                   {activeTab === 'signup' && 'Register your university profile to order meals with confirmed pickup slots.'}
                   {activeTab === 'forgot' && 'Enter your registered email to receive a password reset link.'}
@@ -587,22 +419,6 @@ export const AuthPage: React.FC = () => {
               {/* Segmented Auth Navigation Tabs */}
               {activeTab !== 'forgot' && (
                 <div className="flex bg-[#FAF6F0] p-1 rounded-2xl border border-[#F2ECE4] mb-5 gap-1 text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab('phone');
-                      setErrorMessage(null);
-                      setSuccessMessage(null);
-                    }}
-                    className={`flex-1 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      activeTab === 'phone'
-                        ? 'bg-white text-[#E23744] shadow-xs'
-                        : 'text-[#78716C] hover:text-[#1C1917]'
-                    }`}
-                  >
-                    <Smartphone className="w-3.5 h-3.5" />
-                    <span>Phone OTP</span>
-                  </button>
 
                   <button
                     type="button"
@@ -681,22 +497,18 @@ export const AuthPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Quick Helper Card for Firebase Setup (Authorized Domains & Test Numbers) */}
-                  {(errorMessage.includes('billing') || errorMessage.includes('authorized') || errorMessage.includes('domain')) && (
+                  {/* Quick Helper Card for Firebase Authorized Domains */}
+                  {(errorMessage.includes('authorized') || errorMessage.includes('domain')) && (
                     <div className="p-4 bg-[#FFF8E9] border border-[#F59E0B]/40 rounded-2xl text-xs text-[#1C1917] space-y-3 shadow-xs">
                       <div className="flex items-center justify-between pb-2 border-b border-[#F59E0B]/20">
                         <span className="font-bold text-[#B45309] flex items-center gap-1.5">
                           <Sparkles className="w-4 h-4" />
                           Firebase Console Setup Instructions
                         </span>
-                        <span className="text-[10px] bg-[#F59E0B]/20 text-[#B45309] px-2 py-0.5 rounded-md font-bold">
-                          100% Free
-                        </span>
                       </div>
 
-                      {/* Step A: Add Domain */}
                       <div className="space-y-1">
-                        <div className="font-bold text-[#1C1917]">1. In your Firebase "Add domain" modal:</div>
+                        <div className="font-bold text-[#1C1917]">In your Firebase "Add domain" modal (Authentication &gt; Settings &gt; Authorized domains):</div>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 bg-white px-2.5 py-1.5 rounded-lg border border-[#E7E9E3] font-mono text-[11px] text-[#E23744] truncate select-all">
                             {typeof window !== 'undefined' ? window.location.hostname : 'ais-dev-ar3cmqai5auhtweaefdoel-956251413796.asia-southeast1.run.app'}
@@ -727,21 +539,6 @@ export const AuthPage: React.FC = () => {
                           </button>
                         </div>
                       </div>
-
-                      {/* Step B: Add Test Phone Number */}
-                      <div className="space-y-1 pt-2 border-t border-[#F59E0B]/15">
-                        <div className="font-bold text-[#1C1917]">2. To enable OTP without billing:</div>
-                        <p className="text-[11px] text-[#78716C] leading-snug">
-                          In Firebase Console → <strong>Authentication</strong> → <strong>Sign-in method</strong> → <strong>Phone</strong> → <strong>Phone numbers for testing</strong>:
-                        </p>
-                        <div className="bg-white p-2 rounded-lg border border-[#E7E9E3] font-mono text-[11px] text-[#1C1917] space-y-0.5">
-                          <div>• Phone: <strong className="text-[#E23744]">+91 9506050449</strong></div>
-                          <div>• Test SMS Code: <strong className="text-[#E23744]">123456</strong></div>
-                        </div>
-                        <p className="text-[10px] text-[#78716C] italic">
-                          Click Save. You can then log in instantly with code 123456 at zero cost!
-                        </p>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -751,201 +548,6 @@ export const AuthPage: React.FC = () => {
                 <div className="p-3 mb-4 bg-emerald-50 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 border border-emerald-200 animate-in fade-in duration-150">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span className="font-medium">{successMessage}</span>
-                </div>
-              )}
-
-              {/* ============================================================== */}
-              {/* TAB 1: PHONE NUMBER & REAL SMS OTP                             */}
-              {/* ============================================================== */}
-              {activeTab === 'phone' && (
-                <div className="space-y-4">
-                  {!isOtpSent ? (
-                    <form onSubmit={handleSendOtp} className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                          Mobile Number
-                        </label>
-                        <div className="flex items-center rounded-2xl bg-[#FAF6F0] border border-[#F2ECE4] overflow-hidden focus-within:border-[#E23744] focus-within:ring-2 focus-within:ring-[#E23744]/15 transition-all">
-                          {/* Country Code Prefix */}
-                          <div className="flex items-center gap-1.5 px-3 py-3 border-r border-[#F2ECE4] bg-[#f5ede1] text-xs font-bold text-[#1C1917] shrink-0 select-none">
-                            <span className="text-sm">🇮🇳</span>
-                            <span>+91</span>
-                          </div>
-                          {/* Number Input (Clean and empty by default) */}
-                          <input
-                            type="tel"
-                            maxLength={10}
-                            required
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                            placeholder="Enter 10-digit mobile number"
-                            className="w-full px-3 py-3 text-xs sm:text-sm font-semibold bg-transparent text-[#1C1917] focus:outline-none tracking-wider"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Remember Credentials Checkbox Toggle */}
-                      <div className="p-3 rounded-2xl bg-[#FAF6F0] border border-[#F2ECE4]">
-                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={rememberMe}
-                            onChange={(e) => {
-                              const val = e.target.checked;
-                              setRememberMe(val);
-                              configurePersistence(val);
-                              try {
-                                if (val) {
-                                  localStorage.setItem('mm_remember_credentials', 'true');
-                                } else {
-                                  localStorage.removeItem('mm_remember_credentials');
-                                  if (rememberedCredentials) clearRememberedCredentials();
-                                }
-                              } catch (err) {}
-                            }}
-                            className="mt-0.5 w-4 h-4 rounded text-[#E23744] border-[#F2ECE4] focus:ring-[#E23744] accent-[#E23744] cursor-pointer"
-                          />
-                          <div>
-                            <span className="font-bold text-xs text-[#1C1917] block">
-                              Remember login credentials on this device
-                            </span>
-                            <span className="text-[11px] text-[#78716C] block leading-snug">
-                              {rememberMe
-                                ? 'Session stays saved across browser refreshes on this device.'
-                                : 'Session resets on reload. Google Sign-In will show your device accounts.'}
-                            </span>
-                          </div>
-                        </label>
-                      </div>
-
-                      {/* Inline reCAPTCHA Widget Container */}
-                      <div id="recaptcha-container" className="my-2 min-h-[1px] flex justify-center overflow-hidden" />
-
-                      <button
-                        type="submit"
-                        disabled={isSendingOtp}
-                        className="w-full py-3.5 rounded-2xl bg-[#E23744] hover:bg-[#CB202D] text-white font-bold text-sm shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                      >
-                        {isSendingOtp ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#FDE047]" />
-                            <span>Sending Real SMS OTP via Firebase...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Send One Time Password</span>
-                            <ArrowRight className="w-4 h-4 text-[#FDE047]" />
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  ) : (
-                    /* OTP Verification Screen (Clean, strictly no suggestions) */
-                    <form onSubmit={handleVerifyOtp} className="space-y-4 animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF6F0] border border-[#F2ECE4]">
-                        <div>
-                          <span className="text-[11px] text-[#78716C] block">Real SMS sent to</span>
-                          <span className="font-bold text-xs text-[#E23744]">+91 {phoneNumber}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsOtpSent(false);
-                            setConfirmationResult(null);
-                            setErrorMessage(null);
-                          }}
-                          className="text-[11px] text-[#E23744] font-bold hover:underline cursor-pointer"
-                        >
-                          Change Number
-                        </button>
-                      </div>
-
-                      {/* 6 Digit OTP Input Boxes (Empty, waiting for real SMS) */}
-                      <div>
-                        <label className="block text-xs font-bold text-[#1C1917] mb-2 text-center">
-                          Enter 6-Digit SMS Code Received
-                        </label>
-                        <div className="flex justify-center gap-2 sm:gap-2.5" onPaste={handleOtpPaste}>
-                          {otpValues.map((digit, idx) => (
-                            <input
-                              key={idx}
-                              ref={(el) => { otpInputRefs.current[idx] = el; }}
-                              type="text"
-                              maxLength={1}
-                              inputMode="numeric"
-                              value={digit}
-                              onChange={(e) => handleOtpBoxChange(idx, e.target.value)}
-                              onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                              className="w-10 sm:w-12 h-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-2xl border border-[#F2ECE4] bg-[#FAF6F0] text-[#1C1917] focus:border-[#E23744] focus:ring-2 focus:ring-[#E23744]/20 focus:outline-none transition-all"
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Resend Timer */}
-                      <div className="flex items-center justify-between text-xs text-[#78716C]">
-                        <span>Didn't receive the SMS code?</span>
-                        {otpTimer > 0 ? (
-                          <span className="font-semibold text-[#1C1917]">Resend in {otpTimer}s</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => handleSendOtp(e)}
-                            className="font-bold text-[#E23744] hover:underline cursor-pointer flex items-center gap-1"
-                          >
-                            <RotateCw className="w-3 h-3" />
-                            Resend SMS OTP
-                          </button>
-                        )}
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full py-3.5 rounded-2xl bg-[#E23744] hover:bg-[#CB202D] text-white font-bold text-sm shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#FDE047]" />
-                            <span>Verifying SMS Code...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4 text-white" />
-                            <span>Verify & Proceed to Food Menu</span>
-                          </>
-                        )}
-                      </button>
-
-                      {/* Carrier Delivery Guide & Fallback */}
-                      <div className="p-3 bg-[#FAF6F0] border border-[#F2ECE4] rounded-2xl text-[11px] text-[#78716C] space-y-1.5 leading-relaxed">
-                        <div className="flex items-center gap-1.5 font-bold text-[#E23744]">
-                          <Info className="w-3.5 h-3.5 shrink-0" />
-                          <span>SMS Delivery Notice</span>
-                        </div>
-                        <p>
-                          • Real carrier SMS to Indian mobile numbers (+91) may take 1-2 minutes depending on your telecom operator (Jio, Airtel, Vi).
-                        </p>
-                        <p>
-                          • If you configured this as a test number in Firebase Console, enter the 6-digit test code you assigned in the console (Firebase does not dispatch cellular SMS to testing numbers).
-                        </p>
-                        <div className="pt-1 border-t border-[#F2ECE4] flex justify-between items-center text-[10px]">
-                          <span>Delayed SMS?</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTab('email');
-                              setErrorMessage(null);
-                              setSuccessMessage(null);
-                            }}
-                            className="font-bold text-[#E23744] hover:underline cursor-pointer"
-                          >
-                            Sign in with University Email instead
-                          </button>
-                        </div>
-                      </div>
-                    </form>
-                  )}
                 </div>
               )}
 

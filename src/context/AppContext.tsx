@@ -90,7 +90,6 @@ interface AppContextType {
   latestPlacedOrder: Order | null;
   isLoggedIn: boolean;
   loginUser: (emailOrRoll: string, password?: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
-  loginWithPhoneOtp: (phone: string, otp: string, rememberMe?: boolean, confirmationResult?: any) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: (googleUser?: { name?: string; email?: string; password?: string }, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   rememberedCredentials: { email: string; isGoogle?: boolean } | null;
   clearRememberedCredentials: () => void;
@@ -955,95 +954,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
   }, []);
-
-  const loginWithPhoneOtp = useCallback(async (phone: string, otp: string, rememberMe: boolean = false, confirmationResult?: any): Promise<{ success: boolean; error?: string }> => {
-    const cleanPhone = phone.replace(/[^0-9]/g, '').slice(-10);
-    const cleanOtp = otp.trim();
-
-    if (!cleanPhone || cleanPhone.length !== 10) {
-      return { success: false, error: 'Please enter a valid 10-digit Indian mobile number.' };
-    }
-
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      return { success: false, error: 'Please enter the 6-digit verification code.' };
-    }
-
-    // If confirmationResult from Firebase Phone Auth is present, verify real SMS code:
-    if (confirmationResult && typeof confirmationResult.confirm === 'function') {
-      try {
-        const userCred = await confirmationResult.confirm(cleanOtp);
-        const firebaseUid = userCred.user.uid;
-        const phoneFormatted = userCred.user.phoneNumber || `+91${cleanPhone}`;
-
-        let profile: UserProfile | null = null;
-        if (db) {
-          try {
-            const snap = await getDoc(doc(db, 'users', firebaseUid));
-            if (snap.exists()) {
-              profile = snap.data() as UserProfile;
-            }
-          } catch (e) {}
-        }
-
-        if (!profile) {
-          profile = {
-            uid: firebaseUid,
-            name: `Student (+91 ${cleanPhone.slice(-4)})`,
-            email: `student.${cleanPhone}@dgu.ac.in`,
-            phone: phoneFormatted,
-            rollNo: '0251' + Math.floor(100 + Math.random() * 900),
-            role: 'student',
-            hostelBlock: 'Campus Hostels',
-            isLoggedIn: true,
-            favorites: [],
-            referralCode: `STU${cleanPhone.slice(-4)}-MM`,
-            savedOrdersCount: 0
-          };
-          if (db) {
-            try {
-              await setDoc(doc(db, 'users', firebaseUid), profile, { merge: true });
-            } catch (e) {}
-          }
-        } else {
-          profile = { ...profile, isLoggedIn: true };
-        }
-
-        if (rememberMe) {
-          try {
-            localStorage.setItem('mm_remember_credentials', 'true');
-            localStorage.setItem('mm_remembered_phone', phoneFormatted);
-            localStorage.setItem('mm_remembered_user', JSON.stringify(profile));
-          } catch (e) {}
-          setRememberedCredentials({ email: phoneFormatted, isGoogle: false });
-        } else {
-          try {
-            localStorage.removeItem('mm_remember_credentials');
-            localStorage.removeItem('mm_remembered_phone');
-            localStorage.removeItem('mm_remembered_user');
-          } catch (e) {}
-          setRememberedCredentials(null);
-        }
-
-        setCurrentUser(profile);
-        setActiveRole(profile.role);
-        setCart([]);
-        setOrders([]);
-        setFavorites(profile.favorites || []);
-        showToast(`Phone verified successfully! Signed in as ${profile.name}.`);
-        return { success: true };
-      } catch (confirmErr: any) {
-        return {
-          success: false,
-          error: confirmErr?.message?.replace('Firebase: ', '') || 'Invalid OTP code. Please enter the real code sent to your phone.'
-        };
-      }
-    }
-
-    return {
-      success: false,
-      error: 'Please request a real OTP first by entering your mobile number.'
-    };
-  }, [loginUser, showToast]);
 
   const loginWithGoogle = useCallback(async (googleUser?: { name?: string; email?: string; password?: string }, rememberMe: boolean = false): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -2104,7 +2014,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         isLoggedIn,
         loginUser,
-        loginWithPhoneOtp,
         loginWithGoogle,
         rememberedCredentials,
         clearRememberedCredentials,

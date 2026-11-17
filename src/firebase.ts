@@ -14,9 +14,6 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult,
   User as FirebaseUser
 } from 'firebase/auth';
 import {
@@ -168,35 +165,6 @@ export async function firebaseGoogleSignIn(rememberMe = false) {
   return cred;
 }
 
-/**
- * Create reCAPTCHA verifier for real phone SMS OTP
- */
-export function createRecaptchaVerifier(containerId: string, isVisible = false) {
-  if (!auth) throw new Error('Firebase Auth is not initialized');
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML = '';
-  }
-  return new RecaptchaVerifier(auth, containerId, {
-    size: isVisible ? 'normal' : 'invisible',
-    callback: () => {
-      // reCAPTCHA solved
-    },
-    'expired-callback': () => {
-      console.warn('reCAPTCHA expired');
-    }
-  });
-}
-
-/**
- * Send real SMS OTP to phone number via Firebase Phone Authentication
- */
-export async function firebaseSendPhoneOtp(phoneNumber: string, appVerifier: any, rememberMe = false): Promise<ConfirmationResult> {
-  await configurePersistence(rememberMe);
-  if (!auth) throw new Error('Firebase Auth is not initialized');
-  return signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-}
-
 export {
   app,
   auth,
@@ -212,8 +180,6 @@ export {
   signOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
   doc,
   getDoc,
   setDoc,
@@ -224,4 +190,4 @@ export {
   getDocs,
   onSnapshot
 };
-export type { FirebaseUser, ConfirmationResult };
+export type { FirebaseUser };
